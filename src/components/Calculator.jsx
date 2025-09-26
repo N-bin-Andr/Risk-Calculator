@@ -185,7 +185,9 @@ const Calculator = () => {
                     <textarea value={traderNote} onChange={e => setTraderNote(e.target.value)} rows={4} />
                 </label>
                 <button type="button" onClick={calculate}>Рассчитать</button>
-                <button type="button" onClick={exportToPDF}>Экспорт в PDF</button>
+                <button type="button" onClick={exportToImage}>Экспорт в изображение</button>
+
+                /* <button type="button" onClick={exportToPDF}>Экспорт в PDF</button>*/
             </form>
 
             <div className="results">
