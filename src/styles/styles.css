@@ -119,3 +119,28 @@ label input[type="checkbox"] {
     margin-right: 8px;
     transform: scale(1.2);
 }
+
+.report-container {
+    max-width: 500px;
+    margin: 30px auto;
+    padding: 20px;
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #fdfdfd;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    color: #333;
+    line-height: 1.6;
+}
+
+.report-section-title {
+    color: #0078d4;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.report-comment {
+    font-style: italic;
+    background-color: #eef6ff;
+    padding: 10px;
+    border-left: 4px solid #0078d4;
+}
