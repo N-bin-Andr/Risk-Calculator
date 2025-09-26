@@ -17,6 +17,7 @@ const Calculator = () => {
     const [riskSize, setRiskSize] = useState('');
     const [entryPrice, setEntryPrice] = useState('');
     const [slPrice, setSLPrice] = useState('');
+    const [slPoints, setSLPoints] = useState(0);
     const [takeProfitPrice, setTakeProfitPrice] = useState('');
     const [instrument, setInstrument] = useState('');
     const [direction, setDirection] = useState('buy');
@@ -38,6 +39,7 @@ const Calculator = () => {
         const EP = parseFloat(entryPrice);
         const SL = parseFloat(slPrice);
         const TP = parseFloat(takeProfitPrice);
+        const slDiff = Math.abs(entryPrice - slPrice);
 
         if (isNaN(D) || isNaN(R) || isNaN(EP) || isNaN(SL)) {
             alert('Пожалуйста, заполните все обязательные поля.');
@@ -54,7 +56,7 @@ const Calculator = () => {
         setReportId(`ORD-${Date.now()}`);
         setDate(new Date().toISOString().split('T')[0]); // формат YYYY-MM-DD
         setRiskValue(RV);
-        setSLPoints(SP);
+        setSLPoints(slDiff);
         setVCoins(VC);
         setVValue(VV);
         setRRRatio(RR);
@@ -240,3 +242,4 @@ const Calculator = () => {
 };
 
 export default Calculator;
+
