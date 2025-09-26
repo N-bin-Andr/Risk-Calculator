@@ -4,6 +4,9 @@ import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js';
 import { sendReportToNotion } from '../services/notionService';
 import '../styles/styles.css';
+import html2canvas from 'html2canvas';
+import { useRef } from 'react';
+
 
 ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale);
 
@@ -25,6 +28,7 @@ const Calculator = () => {
     const [isBacktest, setIsBacktest] = useState(false);
     const [status, setStatus] = useState('Открыт');
 
+    const reportRef = useRef();
 
     const calculate = () => {
         const D = parseFloat(deposit);
