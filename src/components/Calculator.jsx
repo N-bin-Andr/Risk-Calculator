@@ -187,6 +187,19 @@ const Calculator = () => {
                 {rrRatio && <p>Risk/Reward: {rrRatio}:1</p>}
             </div>
 
+            <div className="report-preview" ref={reportRef}>
+                <p>Инструмент: {instrument}</p>
+                <p>Дата: {new Date().toLocaleDateString('ru-RU')}</p>
+                <p>Депозит: {deposit} USDT</p>
+                <p>Цена входа: {entryPrice} USDT</p>
+                <p>SL: {slPrice} USDT</p>
+                <p>Размер позиции: {vCoins.toFixed(2)} ({vValue.toFixed(2)} USDT)</p>
+                <p>Риск: {riskSize}% ({riskValue} USDT)</p>
+                {rrRatio && <p>Risk/Reward: {rrRatio}:1</p>}
+                <p>Комментарий: {traderNote || '—'}</p>
+            </div>
+
+
             {entryPrice && slPrice && (
                 <div className="chart">
                     <h4>График уровней сделки</h4>
