@@ -11,6 +11,8 @@ import { useRef } from 'react';
 ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale);
 
 const Calculator = () => {
+    const [reportId, setReportId] = useState('');
+    const [date, setDate] = useState('');
     const [deposit, setDeposit] = useState('');
     const [riskSize, setRiskSize] = useState('');
     const [entryPrice, setEntryPrice] = useState('');
@@ -50,6 +52,8 @@ const Calculator = () => {
         const VV = +(VC * EP).toFixed(2);
         const RR = TP ? +((Math.abs(TP - EP) / Math.abs(EP - SL)).toFixed(2)) : null;
 
+        setReportId(`ORD-${Date.now()}`);
+        setDate(new Date().toISOString().split('T')[0]); // формат YYYY-MM-DD
         setRiskValue(RV);
         setSLPoints(SP);
         setVCoins(VC);
