@@ -19,7 +19,6 @@ const Calculator = () => {
 
     const [riskValue, setRiskValue] = useState('');
     const [slPoints, setSLPoints] = useState('');
-    const [estimatedSLValue, setEstimatedSLValue] = useState('');
     const [vCoins, setVCoins] = useState('');
     const [vValue, setVValue] = useState('');
     const [rrRatio, setRRRatio] = useState('');
@@ -44,16 +43,12 @@ const Calculator = () => {
         if (SP === 0) return alert('SL не может совпадать с ценой входа');
         const VC = +(RV / SP * 1000).toFixed(2);
         const VV = +(VC * EP).toFixed(2);
-        const SLcalc = direction === 'buy'
-            ? +(EP - EP * R).toFixed(4)
-            : +(EP + EP * R).toFixed(4);
         const RR = TP ? +((Math.abs(TP - EP) / Math.abs(EP - SL)).toFixed(2)) : null;
 
         setRiskValue(RV);
         setSLPoints(SP);
         setVCoins(VC);
         setVValue(VV);
-        setEstimatedSLValue(SLcalc);
         setRRRatio(RR);
 
         const reportData = {
@@ -107,7 +102,6 @@ const Calculator = () => {
         doc.text(`Риск на сделку: ${riskSize}%`, 20, 130);
         doc.text(`Риск в USDT: ${riskValue}`, 20, 140);
         doc.text(`SL в пунктах: ${slPoints}`, 20, 150);
-        doc.text(`Расчётное значение SL: ${estimatedSLValue}`, 20, 160);
         if (takeProfitPrice) {
             doc.text(`Take Profit: ${takeProfitPrice} USDT`, 20, 170);
             doc.text(`Risk/Reward: ${rrRatio}:1`, 20, 180);
@@ -132,7 +126,7 @@ const Calculator = () => {
 
     return (
         <div className="calculator">
-            <h2>Калькулятор ордера</h2>
+            <h2>Расчёт параметров ордера</h2>
             <form>
                 <label>
                     <input
@@ -184,7 +178,6 @@ const Calculator = () => {
             <div className="results">
                 <p>Риск в USDT: {riskValue}</p>
                 <p>SL в пунктах: {slPoints}</p>
-                <p>Расчётный SL: {estimatedSLValue}</p>
                 <p>Размер позиции (актив): {vCoins}</p>
                 <p>Размер позиции (USDT): {vValue}</p>
                 {rrRatio && <p>Risk/Reward: {rrRatio}:1</p>}
