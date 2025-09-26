@@ -84,11 +84,12 @@ const Calculator = () => {
     const exportToImage = () => {
         html2canvas(reportRef.current, { scale: 2 }).then(canvas => {
             const link = document.createElement('a');
-            link.download = 'order-report.jpg';
+            link.download = `order-report-${Date.now()}.jpg`;
             link.href = canvas.toDataURL('image/jpeg', 0.9);
             link.click();
         });
     };
+
 
     /*const exportToPDF = () => {
         const doc = new jsPDF();
@@ -187,7 +188,6 @@ const Calculator = () => {
                 <button type="button" onClick={calculate}>Рассчитать</button>
                 <button type="button" onClick={exportToImage}>Экспорт в изображение</button>
 
-                /* <button type="button" onClick={exportToPDF}>Экспорт в PDF</button>*/
             </form>
 
             <div className="results">
@@ -198,18 +198,32 @@ const Calculator = () => {
                 {rrRatio && <p>Risk/Reward: {rrRatio}:1</p>}
             </div>
 
-            <div className="report-preview" ref={reportRef}>
-                <p>Инструмент: {instrument}</p>
-                <p>Дата: {new Date().toLocaleDateString('ru-RU')}</p>
-                <p>Депозит: {deposit} USDT</p>
-                <p>Цена входа: {entryPrice} USDT</p>
-                <p>SL: {slPrice} USDT</p>
-                <p>Размер позиции: {vCoins.toFixed(2)} ({vValue.toFixed(2)} USDT)</p>
-                <p>Риск: {riskSize}% ({riskValue} USDT)</p>
-                {rrRatio && <p>Risk/Reward: {rrRatio}:1</p>}
-                <p>Комментарий: {traderNote || '—'}</p>
-            </div>
+            <div ref={reportRef} className="report-container">
+                <h3 className="report-section-title">📝 Комментарий трейдера</h3>
+                <p className="report-comment">
+                    {traderNote || 'Комментарий отсутствует'}
+                </p>
 
+                <h3 className="report-section-title">📄 Расчёт параметров ордера</h3>
+                <p><strong>Инструмент:</strong> {instrument}</p>
+                <p><strong>Дата:</strong> {date}</p>
+                <p><strong>Номер отчёта:</strong> {reportId}</p>
+
+                <h3 className="report-section-title">💰 Основные параметры</h3>
+                <p><strong>Депозит:</strong> {deposit} USDT</p>
+                <p><strong>Ценовой уровень входа:</strong> {entryPrice} USDT</p>
+                <p><strong>Ценовой уровень SL:</strong> {slPrice} USDT</p>
+                <p><strong>Направление сделки:</strong> {direction === 'buy' ? 'Покупка' : 'Продажа'}</p>
+                <p><strong>Размер позиции (в активах):</strong> {vCoins.toFixed(2)}</p>
+                <p><strong>Размер позиции (в USDT):</strong> {vValue.toFixed(2)}</p>
+
+                <h3 className="report-section-title">🛡️ Риск-менеджмент</h3>
+                <p><strong>Риск на сделку:</strong> {riskSize}%</p>
+                <p><strong>Риск в USDT:</strong> {riskValue}</p>
+                <p><strong>SL в пунктах:</strong> {slPoints}</p>
+                <p><strong>Take Profit:</strong> {takeProfitPrice || '—'} USDT</p>
+                <p><strong>Risk/Reward:</strong> {rrRatio || '—'}</p>
+            </div>
 
             {entryPrice && slPrice && (
                 <div className="chart">
