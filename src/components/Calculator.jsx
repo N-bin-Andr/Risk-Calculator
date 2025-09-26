@@ -178,7 +178,7 @@ const Calculator = () => {
             <div className="results">
                 <p>Риск в USDT: {riskValue}</p>
                 <p>SL в пунктах: {slPoints}</p>
-                <p>Размер позиции (актив): {vCoins}</p>
+                <p>Размер позиции (актив): {vCoins.toFixed(2)}</p>
                 <p>Размер позиции (USDT): {vValue}</p>
                 {rrRatio && <p>Risk/Reward: {rrRatio}:1</p>}
             </div>
