@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import jsPDF from 'jspdf';
+//import jsPDF from 'jspdf';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js';
 import { sendReportToNotion } from '../services/notionService';
@@ -81,7 +81,16 @@ const Calculator = () => {
 
     };
 
-    const exportToPDF = () => {
+    const exportToImage = () => {
+        html2canvas(reportRef.current, { scale: 2 }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'order-report.jpg';
+            link.href = canvas.toDataURL('image/jpeg', 0.9);
+            link.click();
+        });
+    };
+
+    /*const exportToPDF = () => {
         const doc = new jsPDF();
         const today = new Date().toLocaleDateString('ru-RU');
         const reportId = 'ORD-' + Date.now();
@@ -117,7 +126,7 @@ const Calculator = () => {
 
         doc.save('order-report.pdf');
     };
-
+*/
     const chartData = {
         labels: ['SL', 'Entry', 'TP'],
         datasets: [{
