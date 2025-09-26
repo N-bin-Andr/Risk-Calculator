@@ -205,12 +205,13 @@ const Calculator = () => {
                 <p className="report-comment">
                     {traderNote || 'Комментарий отсутствует'}
                 </p>
-                <h3 className="report-section-title">📄 Расчёт параметров ордера</h3>
-                <p><strong>Ордер:</strong> {reportId}</p>
-                <p><strong>Дата:</strong> {date}</p>
-                <h3 className="report-section-title">💰 Основные параметры</h3>
-                <p><strong>Инструмент:</strong> {instrument}</p>
+                <h3 className="report-section-title">📄 Ордер</h3>
+                <p><strong>ID:</strong> {reportId}</p>
                 <p><strong>Депозит:</strong> {deposit} USDT</p>
+                <p><strong>Дата:</strong> {date}</p>
+
+                <h3 className="report-section-title">💰 Параметры позиции:</h3>
+                <p><strong>Инструмент:</strong> {instrument}</p>
                 <p><strong>Ценовой уровень входа:</strong> {entryPrice} USDT</p>
                 <p><strong>Ценовой уровень SL:</strong> {slPrice} USDT</p>
                 <p><strong>Направление сделки:</strong> {direction === 'buy' ? 'Покупка' : 'Продажа'}</p>
