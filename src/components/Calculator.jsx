@@ -31,6 +31,7 @@ const Calculator = () => {
     const reportRef = useRef();
 
     const calculate = () => {
+        const reportId = `ORD-${Date.now()}`;
         const D = parseFloat(deposit);
         const R = parseFloat(riskSize) / 100;
         const EP = parseFloat(entryPrice);
@@ -56,6 +57,7 @@ const Calculator = () => {
         setRRRatio(RR);
 
         const reportData = {
+            reportId,
             instrument,
             date: new Date().toISOString().split('T')[0],
             direction,
@@ -203,20 +205,17 @@ const Calculator = () => {
                 <p className="report-comment">
                     {traderNote || 'Комментарий отсутствует'}
                 </p>
-
                 <h3 className="report-section-title">📄 Расчёт параметров ордера</h3>
-                <p><strong>Инструмент:</strong> {instrument}</p>
+                <p><strong>Ордер:</strong> {reportId}</p>
                 <p><strong>Дата:</strong> {date}</p>
-                <p><strong>Номер отчёта:</strong> {reportId}</p>
-
                 <h3 className="report-section-title">💰 Основные параметры</h3>
+                <p><strong>Инструмент:</strong> {instrument}</p>
                 <p><strong>Депозит:</strong> {deposit} USDT</p>
                 <p><strong>Ценовой уровень входа:</strong> {entryPrice} USDT</p>
                 <p><strong>Ценовой уровень SL:</strong> {slPrice} USDT</p>
                 <p><strong>Направление сделки:</strong> {direction === 'buy' ? 'Покупка' : 'Продажа'}</p>
                 <p><strong>Размер позиции (в активах):</strong> {vCoins.toFixed(2)}</p>
                 <p><strong>Размер позиции (в USDT):</strong> {vValue.toFixed(2)}</p>
-
                 <h3 className="report-section-title">🛡️ Риск-менеджмент</h3>
                 <p><strong>Риск на сделку:</strong> {riskSize}%</p>
                 <p><strong>Риск в USDT:</strong> {riskValue}</p>
