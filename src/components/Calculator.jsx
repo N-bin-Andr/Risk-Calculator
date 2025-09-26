@@ -198,7 +198,7 @@ const Calculator = () => {
             <div className="results">
                 <p>Риск в USDT: {riskValue}</p>
                 <p>SL в пунктах: {slPoints}</p>
-                <p>Размер позиции (актив): {vCoins.toFixed(2)}</p>
+                <p>Размер позиции (в активе): {vCoins.toFixed(2)}</p>
                 <p>Размер позиции (USDT): {vValue}</p>
                 {rrRatio && <p>Risk/Reward: {rrRatio}:1</p>}
             </div>
@@ -219,7 +219,7 @@ const Calculator = () => {
                 <p><strong>Ценовой уровень входа:</strong> {entryPrice} USDT</p>
                 <p><strong>Ценовой уровень SL:</strong> {slPrice} USDT</p>
                 <p><strong>Ценовой уровень TP:</strong> {takeProfitPrice || '—'} USDT</p>
-                <p><strong>Размер позиции (в активах):</strong> {vCoins.toFixed(2)}</p>
+                <p><strong>Размер позиции (в активах):</strong> {typeof vCoins === 'number' ? vCoins.toFixed(2) : '—'}</p>
                 <p><strong>Размер позиции (в USDT):</strong> {vValue.toFixed(2)}</p>
                 <p><strong>Risk/Reward:</strong> 1:{rrRatio || '—'}</p>
                 <h3 className="report-section-title">🛡️ Риск-менеджмент</h3>
