@@ -23,8 +23,7 @@ const Calculator = () => {
     const [traderNote, setTraderNote] = useState('');
 
     const [riskValue, setRiskValue] = useState('');
-    const [slPoints, setSLPoints] = useState('');
-    const [vCoins, setVCoins] = useState('');
+    const [vCoins, setVCoins] = useState(0);
     const [vValue, setVValue] = useState('');
     const [rrRatio, setRRRatio] = useState('');
     const [isBacktest, setIsBacktest] = useState(false);
