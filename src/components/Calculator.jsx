@@ -4,7 +4,6 @@ import '../styles/styles.css';
 import html2canvas from 'html2canvas';
 
 const Calculator = () => {
-    const [showReport, setShowReport] = useState(false);
     const [reportId, setReportId] = useState('');
     const [date, setDate] = useState('');
     const [deposit, setDeposit] = useState('');
@@ -21,7 +20,8 @@ const Calculator = () => {
     const [vValue, setVValue] = useState(0);
     const [rrRatio, setRRRatio] = useState('');
     const [isBacktest, setIsBacktest] = useState(false);
-    const [status, setStatus] = useState('Открыт');
+    const [status, setStatus] = useState('Запланирован');
+    const [showReport, setShowReport] = useState(false);
 
     const reportRef = useRef();
 
@@ -100,21 +100,23 @@ const Calculator = () => {
     };
 
     const exportToImage = () => {
-        setShowReport(true); // показываем скрытый отчёт
+        setShowReport(true); // включаем отчёт
 
         setTimeout(() => {
-            if (reportRef.current) {
-                html2canvas(reportRef.current, { scale: 2 }).then(canvas => {
+            const element = reportRef.current;
+            if (element) {
+                html2canvas(element, { scale: 2 }).then(canvas => {
                     const link = document.createElement('a');
                     link.download = `order-report-${Date.now()}.jpg`;
                     link.href = canvas.toDataURL('image/jpeg', 0.9);
                     link.click();
-                    setShowReport(false); // скрываем отчёт обратно
+                    setShowReport(false); // скрываем отчёт
                 });
             } else {
                 alert('Ошибка: отчёт не найден.');
+                setShowReport(false);
             }
-        }, 100); // даём DOM время отрисоваться
+        }, 200); // даём время DOM отрисоваться
     };
 
     return (
