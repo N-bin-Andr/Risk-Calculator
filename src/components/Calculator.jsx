@@ -3,8 +3,6 @@ import { sendReportToNotion } from '../services/notionService';
 import '../styles/styles.css';
 import html2canvas from 'html2canvas';
 
-ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale);
-
 const Calculator = () => {
     const [reportId, setReportId] = useState('');
     const [date, setDate] = useState('');
@@ -60,6 +58,8 @@ const Calculator = () => {
         const VC = +(RV / Math.abs(EP - SL)).toFixed(2);
         const VV = +(VC * EP).toFixed(2);
         const RR = TP ? +((Math.abs(TP - EP) / Math.abs(EP - SL)).toFixed(2)) : null;
+        const RV = +(D * (R / 100)).toFixed(2);
+
 
         setReportId(reportId);
         setDate(new Date().toISOString().split('T')[0]);
