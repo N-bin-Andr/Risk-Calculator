@@ -192,12 +192,12 @@ const Calculator = () => {
                         <p><strong>Инструмент:</strong> {instrument}</p>
                         <p><strong>Направление сделки:</strong> {direction === 'buy' ? 'Buy' : 'Sell'}</p>
                         <p><strong>Ценовой уровень входа:</strong> {entryPrice} USDT</p>
-                        <p><strong>Ценовой уровень SL:</strong> {slPrice} USDT</p>
                         <p><strong>Размер позиции (в активах):</strong> {typeof vCoins === 'number' ? vCoins.toFixed(2) : '—'}</p>
                         <p><strong>Размер позиции (в USDT):</strong> {typeof vValue === 'number' ? vValue.toFixed(2) : '—'}</p>
                         <p><strong>Ценовой уровень TP:</strong> {takeProfitPrice || '—'} USDT</p>
                         <p><strong>Risk/Reward:</strong> {rrRatio || '—'}</p>
                         <h3 className="report-section-title">🛡️ Риск-менеджмент</h3>
+                        <p><strong>Ценовой уровень SL:</strong> {slPrice} USDT</p>
                         <p><strong>Риск на сделку:</strong> {riskSize}%</p>
                         <p><strong>Риск в USDT:</strong> {riskValue}</p>
                     </div>
