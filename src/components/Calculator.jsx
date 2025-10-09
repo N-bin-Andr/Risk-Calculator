@@ -12,7 +12,9 @@ const Calculator = () => {
     const [date, setDate] = useState('');
     const { addInstrument, getSuggestions, deleteInstrument, history, exportHistoryAsJSON } = useInstrumentHistory();
     const [instrumentSuggestions, setInstrumentSuggestions] = useState([]);
-    const [deposit, setDeposit] = useState('');
+    const [deposit, setDeposit] = useState(() => {
+        return localStorage.getItem('lastDeposit') || '';
+    });
     const [riskSize, setRiskSize] = useState('');
     const [entryPrice, setEntryPrice] = useState('');
     const [slPrice, setSLPrice] = useState('');
@@ -128,8 +130,19 @@ const Calculator = () => {
                 </datalist>
 
                 <label>Депозит (USDT):
-                    <input type="number" step="0.01" value={deposit} onChange={e => setDeposit(e.target.value)} />
+                    <input
+                        type="number"
+                        step="0.01"
+                        value={deposit}
+                        onChange={e => {
+                            const value = e.target.value;
+                            setDeposit(value);
+                            localStorage.setItem('lastDeposit', value);
+                        }}
+                    />
                 </label>
+
+
                 <label>Риск на сделку (%):
                     <input type="number" step="0.01" value={riskSize} onChange={e => setRiskSize(e.target.value)} />
                 </label>
