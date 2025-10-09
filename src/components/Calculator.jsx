@@ -154,8 +154,8 @@ const Calculator = () => {
                 </label>
                 <label>Направление сделки:
                     <select value={direction} onChange={e => setDirection(e.target.value)}>
-                        <option value="buy">Покупка</option>
-                        <option value="sell">Продажа</option>
+                        <option value="Buy">Покупка</option>
+                        <option value="Sell">Продажа</option>
                     </select>
                 </label>
                 <label>Статус сделки:
@@ -171,78 +171,41 @@ const Calculator = () => {
                 </label>
                 <button type="button" onClick={calculate}>Рассчитать</button>
                 <button type="button" onClick={exportToImage}>Экспорт в изображение</button>
-
             </form>
 
             <div className="results">
-                <p>Риск в USDT: {riskValue}</p>
-                <p>SL в пунктах: {slPoints}</p>
                 <p>Размер позиции (в активе): {vCoins.toFixed(2)}</p>
                 <p>Размер позиции (USDT): {vValue}</p>
-                {rrRatio && <p>Risk/Reward: {rrRatio}:1</p>}
+                <p>Риск в USDT: {riskValue}</p>
+                {rrRatio && <p>Risk/Reward: {rrRatio}</p>}
             </div>
-        </div>
-
-
-
-
-
-    );
-    <div style={{ display: 'none' }}>
-        <div ref={reportRef} className="report-container">
-            <h3 className="report-section-title">📝 Комментарий трейдера</h3>
-            <p className="report-comment">
-                {traderNote || 'Комментарий отсутствует'}
-            </p>
-            <h3 className="report-section-title">📄 Ордер</h3>
-            <p><strong>ID:</strong> {reportId}</p>
-            <p><strong>Депозит:</strong> {deposit} USDT</p>
-            <p><strong>Дата:</strong> {date}</p>
-
-            <h3 className="report-section-title">💰 Параметры позиции:</h3>
-            <p><strong>Инструмент:</strong> {instrument}</p>
-            <p><strong>Направление сделки:</strong> {direction === 'buy' ? 'Покупка' : 'Продажа'}</p>
-            <p><strong>Ценовой уровень входа:</strong> {entryPrice} USDT</p>
-            <p><strong>Ценовой уровень SL:</strong> {slPrice} USDT</p>
-            <p><strong>Ценовой уровень TP:</strong> {takeProfitPrice || '—'} USDT</p>
-            <p><strong>Размер позиции (в активах):</strong> {typeof vCoins === 'number' ? vCoins.toFixed(2) : '—'}</p>
-            <p><strong>Размер позиции (в USDT):</strong> {typeof vValue === 'number' ? vValue.toFixed(2) : '—'}</p>
-            <p><strong>Risk/Reward:</strong> 1:{rrRatio || '—'}</p>
-            <h3 className="report-section-title">🛡️ Риск-менеджмент</h3>
-            <p><strong>Риск на сделку:</strong> {riskSize}%</p>
-            <p><strong>Риск в USDT:</strong> {riskValue}</p>
-            <p><strong>SL в пунктах:</strong> {slPoints}</p>
-        </div>
-        {showReport && (
-            <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
-                <div ref={reportRef} className="report-container">
-                    <h3 className="report-section-title">📝 Комментарий трейдера</h3>
-                    <p className="report-comment">
-                        {traderNote || 'Комментарий отсутствует'}
-                    </p>
-                    <h3 className="report-section-title">📄 Ордер</h3>
-                    <p><strong>ID:</strong> {reportId}</p>
-                    <p><strong>Депозит:</strong> {deposit} USDT</p>
-                    <p><strong>Дата:</strong> {date}</p>
-
-                    <h3 className="report-section-title">💰 Параметры позиции:</h3>
-                    <p><strong>Инструмент:</strong> {instrument}</p>
-                    <p><strong>Направление сделки:</strong> {direction === 'buy' ? 'Покупка' : 'Продажа'}</p>
-                    <p><strong>Ценовой уровень входа:</strong> {entryPrice} USDT</p>
-                    <p><strong>Ценовой уровень SL:</strong> {slPrice} USDT</p>
-                    <p><strong>Ценовой уровень TP:</strong> {takeProfitPrice || '—'} USDT</p>
-                    <p><strong>Размер позиции (в активах):</strong> {typeof vCoins === 'number' ? vCoins.toFixed(2) : '—'}</p>
-                    <p><strong>Размер позиции (в USDT):</strong> {typeof vValue === 'number' ? vValue.toFixed(2) : '—'}</p>
-                    <p><strong>Risk/Reward:</strong> 1:{rrRatio || '—'}</p>
-
-                    <h3 className="report-section-title">🛡️ Риск-менеджмент</h3>
-                    <p><strong>Риск на сделку:</strong> {riskSize}%</p>
-                    <p><strong>Риск в USDT:</strong> {riskValue}</p>
-                    <p><strong>SL в пунктах:</strong> {slPoints}</p>
+            {showReport && (
+                <div ref={reportRef} style={{ position: 'absolute', left: '-9999px', top: 0 }}>
+                    <div className="report-container">
+                        <h3 className="report-section-title">📝 Комментарий трейдера</h3>
+                        <p className="report-comment">{traderNote || 'Комментарий отсутствует'}</p>
+                        <h3 className="report-section-title">📄 Ордер</h3>
+                        <p><strong>ID:</strong> {reportId}</p>
+                        <p><strong>Депозит:</strong> {deposit} USDT</p>
+                        <p><strong>Дата:</strong> {date}</p>
+                        <h3 className="report-section-title">💰 Параметры позиции:</h3>
+                        <p><strong>Инструмент:</strong> {instrument}</p>
+                        <p><strong>Направление сделки:</strong> {direction === 'buy' ? 'Buy' : 'Sell'}</p>
+                        <p><strong>Ценовой уровень входа:</strong> {entryPrice} USDT</p>
+                        <p><strong>Ценовой уровень SL:</strong> {slPrice} USDT</p>
+                        <p><strong>Размер позиции (в активах):</strong> {typeof vCoins === 'number' ? vCoins.toFixed(2) : '—'}</p>
+                        <p><strong>Размер позиции (в USDT):</strong> {typeof vValue === 'number' ? vValue.toFixed(2) : '—'}</p>
+                        <p><strong>Ценовой уровень TP:</strong> {takeProfitPrice || '—'} USDT</p>
+                        <p><strong>Risk/Reward:</strong> {rrRatio || '—'}</p>
+                        <h3 className="report-section-title">🛡️ Риск-менеджмент</h3>
+                        <p><strong>Риск на сделку:</strong> {riskSize}%</p>
+                        <p><strong>Риск в USDT:</strong> {riskValue}</p>
+                    </div>
                 </div>
-            </div>
-        )}
-    </div>
+            )}
+
+        </div>
+    );
 };
 
 export default Calculator;
