@@ -1,6 +1,4 @@
 import React, { useState, useRef } from 'react';
-import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js';
 import { sendReportToNotion } from '../services/notionService';
 import '../styles/styles.css';
 import html2canvas from 'html2canvas';
@@ -110,16 +108,6 @@ const Calculator = () => {
         });
     };
 
-    const chartData = {
-        labels: ['SL', 'Entry', 'TP'],
-        datasets: [{
-            label: 'Уровни сделки',
-            data: [parseFloat(slPrice), parseFloat(entryPrice), parseFloat(takeProfitPrice || entryPrice)],
-            borderColor: 'blue',
-            fill: false,
-        }]
-    };
-
     return (
         <div className="calculator">
             <h2>Расчёт параметров ордера</h2>
@@ -175,9 +163,6 @@ const Calculator = () => {
 
             </form>
 
-
-
-
             <div className="results">
                 <p>Риск в USDT: {riskValue}</p>
                 <p>SL в пунктах: {slPoints}</p>
@@ -185,15 +170,6 @@ const Calculator = () => {
                 <p>Размер позиции (USDT): {vValue}</p>
                 {rrRatio && <p>Risk/Reward: {rrRatio}:1</p>}
             </div>
-
-
-
-            {entryPrice && slPrice && (
-                <div className="chart">
-                    <h4>График уровней сделки</h4>
-                    <Line data={chartData} />
-                </div>
-            )}
         </div>
     );
     <div style={{ display: 'none' }}>
