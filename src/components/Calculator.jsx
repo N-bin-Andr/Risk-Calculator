@@ -57,8 +57,7 @@ const Calculator = () => {
         }
 
         const reportId = `ORD-${Date.now()}`;
-        const RV = +(D * (R / 100)).toFixed(2);
-        const SP = +Math.abs(EP - SL).toFixed(1);
+        const SP = +(Math.abs(EP - SL) / 0.0001).toFixed(1);
         if (SP === 0) return alert('SL не может совпадать с ценой входа');
         const VC = +(RV / SP * 1000).toFixed(2);
         const VV = +(VC * EP).toFixed(2);
