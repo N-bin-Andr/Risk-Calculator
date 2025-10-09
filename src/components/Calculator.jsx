@@ -1,12 +1,9 @@
-import React, { useState } from 'react';
-//import jsPDF from 'jspdf';
+import React, { useState, useRef } from 'react';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js';
 import { sendReportToNotion } from '../services/notionService';
 import '../styles/styles.css';
 import html2canvas from 'html2canvas';
-import { useRef } from 'react';
-
 
 ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale);
 
@@ -22,10 +19,9 @@ const Calculator = () => {
     const [instrument, setInstrument] = useState('');
     const [direction, setDirection] = useState('buy');
     const [traderNote, setTraderNote] = useState('');
-
     const [riskValue, setRiskValue] = useState('');
     const [vCoins, setVCoins] = useState(0);
-    const [vValue, setVValue] = useState('');
+    const [vValue, setVValue] = useState(0);
     const [rrRatio, setRRRatio] = useState('');
     const [isBacktest, setIsBacktest] = useState(false);
     const [status, setStatus] = useState('Открыт');
@@ -33,30 +29,45 @@ const Calculator = () => {
     const reportRef = useRef();
 
     const calculate = () => {
-        const reportId = `ORD-${Date.now()}`;
         const D = parseFloat(deposit);
-        const R = parseFloat(riskSize) / 100;
+        const R = parseFloat(riskSize);
         const EP = parseFloat(entryPrice);
         const SL = parseFloat(slPrice);
         const TP = parseFloat(takeProfitPrice);
         const slDiff = Math.abs(entryPrice - slPrice);
 
-        if (isNaN(D) || isNaN(R) || isNaN(EP) || isNaN(SL)) {
-            alert('Пожалуйста, заполните все обязательные поля.');
+        if (
+            isNaN(D) || D <= 0 ||
+            isNaN(R) || R <= 0 || R > 100 ||
+            isNaN(EP) || EP <= 0 ||
+            isNaN(SL) || SL <= 0
+        ) {
+            alert('Пожалуйста, введите корректные числовые значения. Риск должен быть от 0 до 100%.');
             return;
         }
 
-        const RV = +(D * R).toFixed(2);
+        if (direction !== 'buy' && direction !== 'sell') {
+            alert('Выберите направление сделки: покупка или продажа.');
+            return;
+        }
+
+        if (takeProfitPrice && isNaN(TP)) {
+            alert('Take Profit должен быть числом.');
+            return;
+        }
+
+        const reportId = `ORD-${Date.now()}`;
+        const RV = +(D * (R / 100)).toFixed(2);
         const SP = +Math.abs(EP - SL).toFixed(1);
         if (SP === 0) return alert('SL не может совпадать с ценой входа');
         const VC = +(RV / SP * 1000).toFixed(2);
         const VV = +(VC * EP).toFixed(2);
         const RR = TP ? +((Math.abs(TP - EP) / Math.abs(EP - SL)).toFixed(2)) : null;
 
-        setReportId(`ORD-${Date.now()}`);
-        setDate(new Date().toISOString().split('T')[0]); // формат YYYY-MM-DD
+        setReportId(reportId);
+        setDate(new Date().toISOString().split('T')[0]);
         setRiskValue(RV);
-        setSLPoints(slDiff);
+        setSLPoints(SP);
         setVCoins(VC);
         setVValue(VV);
         setRRRatio(RR);
@@ -67,7 +78,7 @@ const Calculator = () => {
             date: new Date().toISOString().split('T')[0],
             direction,
             deposit: D,
-            riskSize: R * 100,
+            riskSize: R,
             riskValue: RV,
             entryPrice: EP,
             slPrice: SL,
@@ -84,8 +95,11 @@ const Calculator = () => {
         archive.push(reportData);
         localStorage.setItem('reportArchive', JSON.stringify(archive));
 
-        sendReportToNotion(reportData, isBacktest);
+        const databaseId = isBacktest
+            ? 'Backtest-1ea3718e85ac81dd82adffca37528e4b?p=2723718e85ac808094e1ffc452341d0c&pm=c'
+            : process.env.REACT_APP_NOTION_DATABASE_ID;
 
+        sendReportToNotion(reportData, databaseId);
     };
 
     const exportToImage = () => {
@@ -97,44 +111,6 @@ const Calculator = () => {
         });
     };
 
-
-    /*const exportToPDF = () => {
-        const doc = new jsPDF();
-        const today = new Date().toLocaleDateString('ru-RU');
-        const reportId = 'ORD-' + Date.now();
-
-        doc.setFontSize(16);
-        doc.text('📄 Расчёт параметров ордера', 20, 20);
-        doc.setFontSize(12);
-        doc.text(`Инструмент: ${instrument || '—'}`, 20, 30);
-        doc.setFontSize(10);
-        doc.text(`Дата: ${today}`, 150, 30);
-        doc.text(`Номер отчёта: ${reportId}`, 150, 36);
-
-        doc.setFontSize(12);
-        doc.text(`Депозит: ${deposit} USDT`, 20, 50);
-        doc.text(`Ценовой уровень входа: ${entryPrice} USDT`, 20, 60);
-        doc.text(`Ценовой уровень SL: ${slPrice} USDT`, 20, 70);
-        doc.text(`Направление сделки: ${direction === 'buy' ? 'Покупка' : 'Продажа'}`, 20, 80);
-        doc.text(`Размер позиции (в активах): ${vCoins}`, 20, 90);
-        doc.text(`Размер позиции (в USDT): ${vValue}`, 20, 100);
-
-        doc.text('🛡️ Риск менеджмент', 20, 120);
-        doc.text(`Риск на сделку: ${riskSize}%`, 20, 130);
-        doc.text(`Риск в USDT: ${riskValue}`, 20, 140);
-        doc.text(`SL в пунктах: ${slPoints}`, 20, 150);
-        if (takeProfitPrice) {
-            doc.text(`Take Profit: ${takeProfitPrice} USDT`, 20, 170);
-            doc.text(`Risk/Reward: ${rrRatio}:1`, 20, 180);
-        }
-
-        doc.text('📝 Комментарий трейдера:', 20, 200);
-        const noteLines = doc.splitTextToSize(traderNote || '—', 160);
-        doc.text(noteLines, 25, 210);
-
-        doc.save('order-report.pdf');
-    };
-*/
     const chartData = {
         labels: ['SL', 'Entry', 'TP'],
         datasets: [{
@@ -169,6 +145,9 @@ const Calculator = () => {
                 <label>Цена входа (USDT):
                     <input type="number" step="0.0001" value={entryPrice} onChange={e => setEntryPrice(e.target.value)} />
                 </label>
+
+                {isNaN(entryPrice) && <span className="error-text">Введите число</span>}
+
                 <label>Цена Stop Loss (USDT):
                     <input type="number" step="0.0001" value={slPrice} onChange={e => setSLPrice(e.target.value)} />
                 </label>
@@ -197,6 +176,9 @@ const Calculator = () => {
 
             </form>
 
+
+
+
             <div className="results">
                 <p>Риск в USDT: {riskValue}</p>
                 <p>SL в пунктах: {slPoints}</p>
@@ -222,7 +204,7 @@ const Calculator = () => {
                 <p><strong>Ценовой уровень SL:</strong> {slPrice} USDT</p>
                 <p><strong>Ценовой уровень TP:</strong> {takeProfitPrice || '—'} USDT</p>
                 <p><strong>Размер позиции (в активах):</strong> {typeof vCoins === 'number' ? vCoins.toFixed(2) : '—'}</p>
-                <p><strong>Размер позиции (в USDT):</strong> {vValue.toFixed(2)}</p>
+                <p><strong>Размер позиции (в USDT):</strong> {typeof vValue === 'number' ? vValue.toFixed(2) : '—'}</p>
                 <p><strong>Risk/Reward:</strong> 1:{rrRatio || '—'}</p>
                 <h3 className="report-section-title">🛡️ Риск-менеджмент</h3>
                 <p><strong>Риск на сделку:</strong> {riskSize}%</p>
@@ -242,4 +224,3 @@ const Calculator = () => {
 };
 
 export default Calculator;
-
