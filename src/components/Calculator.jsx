@@ -15,7 +15,9 @@ const Calculator = () => {
     const [deposit, setDeposit] = useState(() => {
         return localStorage.getItem('lastDeposit') || '';
     });
-    const [riskSize, setRiskSize] = useState('');
+    const [riskSize, setRiskSize] = useState(() => {
+        return localStorage.getItem('lastRiskSize') || '';
+    });
     const [entryPrice, setEntryPrice] = useState('');
     const [slPrice, setSLPrice] = useState('');
     const [slPoints, setSLPoints] = useState(0);
@@ -28,7 +30,9 @@ const Calculator = () => {
     const [vValue, setVValue] = useState(0);
     const [rrRatio, setRRRatio] = useState('');
     const [isBacktest, setIsBacktest] = useState(false);
-    const [status, setStatus] = useState('Запланирован');
+    const [status, setStatus] = useState(() => {
+        return localStorage.getItem('lastStatus') || 'Запланирован';
+    });
     const [showReport, setShowReport] = useState(false);
 
     const reportRef = useRef();
@@ -144,7 +148,16 @@ const Calculator = () => {
 
 
                 <label>Риск на сделку (%):
-                    <input type="number" step="0.01" value={riskSize} onChange={e => setRiskSize(e.target.value)} />
+                    <input
+                        type="number"
+                        step="0.01"
+                        value={riskSize}
+                        onChange={e => {
+                            const value = e.target.value;
+                            setRiskSize(value);
+                            localStorage.setItem('lastRiskSize', value);
+                        }}
+                    />
                 </label>
                 <label>Цена входа (USDT):
                     <input type="number" step="0.0001" value={entryPrice} onChange={e => setEntryPrice(e.target.value)} />
@@ -165,12 +178,20 @@ const Calculator = () => {
                     </select>
                 </label>
                 <label>Статус сделки:
-                    <select value={status} onChange={e => setStatus(e.target.value)}>
+                    <select
+                        value={status}
+                        onChange={e => {
+                            const value = e.target.value;
+                            setStatus(value);
+                            localStorage.setItem('lastStatus', value);
+                        }}
+                    >
                         <option value="Открыт">Открыт</option>
                         <option value="Запланирован">Запланирован</option>
                         <option value="Отменён">Отменён</option>
                     </select>
                 </label>
+
 
                 <label>Комментарий трейдера:
                     <textarea value={traderNote} onChange={e => setTraderNote(e.target.value)} rows={4} />
