@@ -186,31 +186,7 @@ const Calculator = () => {
                 {rrRatio && <p>Risk/Reward: {rrRatio}:1</p>}
             </div>
 
-            <div ref={reportRef} className="report-container">
-                <h3 className="report-section-title">📝 Комментарий трейдера</h3>
-                <p className="report-comment">
-                    {traderNote || 'Комментарий отсутствует'}
-                </p>
-                <h3 className="report-section-title">📄 Ордер</h3>
-                <p><strong>ID:</strong> {reportId}</p>
-                <p><strong>Депозит:</strong> {deposit} USDT</p>
-                <p><strong>Дата:</strong> {date}</p>
 
-                <h3 className="report-section-title">💰 Параметры позиции:</h3>
-                <p><strong>Инструмент:</strong> {instrument}</p>
-                <p><strong>Направление сделки:</strong> {direction === 'buy' ? 'Покупка' : 'Продажа'}</p>
-                <p><strong>Ценовой уровень входа:</strong> {entryPrice} USDT</p>
-                <p><strong>Ценовой уровень SL:</strong> {slPrice} USDT</p>
-                <p><strong>Ценовой уровень TP:</strong> {takeProfitPrice || '—'} USDT</p>
-                <p><strong>Размер позиции (в активах):</strong> {typeof vCoins === 'number' ? vCoins.toFixed(2) : '—'}</p>
-                <p><strong>Размер позиции (в USDT):</strong> {typeof vValue === 'number' ? vValue.toFixed(2) : '—'}</p>
-                <p><strong>Risk/Reward:</strong> 1:{rrRatio || '—'}</p>
-                <h3 className="report-section-title">🛡️ Риск-менеджмент</h3>
-                <p><strong>Риск на сделку:</strong> {riskSize}%</p>
-                <p><strong>Риск в USDT:</strong> {riskValue}</p>
-                <p><strong>SL в пунктах:</strong> {slPoints}</p>
-
-            </div>
 
             {entryPrice && slPrice && (
                 <div className="chart">
@@ -220,6 +196,30 @@ const Calculator = () => {
             )}
         </div>
     );
+    <div ref={reportRef} className="report-container">
+        <h3 className="report-section-title">📝 Комментарий трейдера</h3>
+        <p className="report-comment">
+            {traderNote || 'Комментарий отсутствует'}
+        </p>
+        <h3 className="report-section-title">📄 Ордер</h3>
+        <p><strong>ID:</strong> {reportId}</p>
+        <p><strong>Депозит:</strong> {deposit} USDT</p>
+        <p><strong>Дата:</strong> {date}</p>
+
+        <h3 className="report-section-title">💰 Параметры позиции:</h3>
+        <p><strong>Инструмент:</strong> {instrument}</p>
+        <p><strong>Направление сделки:</strong> {direction === 'buy' ? 'Покупка' : 'Продажа'}</p>
+        <p><strong>Ценовой уровень входа:</strong> {entryPrice} USDT</p>
+        <p><strong>Ценовой уровень SL:</strong> {slPrice} USDT</p>
+        <p><strong>Ценовой уровень TP:</strong> {takeProfitPrice || '—'} USDT</p>
+        <p><strong>Размер позиции (в активах):</strong> {typeof vCoins === 'number' ? vCoins.toFixed(2) : '—'}</p>
+        <p><strong>Размер позиции (в USDT):</strong> {typeof vValue === 'number' ? vValue.toFixed(2) : '—'}</p>
+        <p><strong>Risk/Reward:</strong> 1:{rrRatio || '—'}</p>
+        <h3 className="report-section-title">🛡️ Риск-менеджмент</h3>
+        <p><strong>Риск на сделку:</strong> {riskSize}%</p>
+        <p><strong>Риск в USDT:</strong> {riskValue}</p>
+        <p><strong>SL в пунктах:</strong> {slPoints}</p>
+    </div>
 };
 
 export default Calculator;
