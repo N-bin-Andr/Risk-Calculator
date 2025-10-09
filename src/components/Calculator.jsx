@@ -3,11 +3,15 @@ import { sendReportToNotion } from '../services/notionService';
 import '../styles/styles.css';
 import html2canvas from 'html2canvas';
 import { calculateReport } from '../utils/calculateReport';
+import { useInstrumentHistory } from '../hooks/useInstrumentHistory';
+
 
 
 const Calculator = () => {
     const [reportId, setReportId] = useState('');
     const [date, setDate] = useState('');
+    const { addInstrument, getSuggestions, deleteInstrument, history } = useInstrumentHistory();
+    const [instrumentSuggestions, setInstrumentSuggestions] = useState([]);
     const [deposit, setDeposit] = useState('');
     const [riskSize, setRiskSize] = useState('');
     const [entryPrice, setEntryPrice] = useState('');
@@ -96,9 +100,33 @@ const Calculator = () => {
                     />
                     Backtest
                 </label>
+
                 <label>Инструмент:
-                    <input type="text" value={instrument} onChange={e => setInstrument(e.target.value)} />
+                    <input
+                        type="text"
+                        value={instrument}
+                        onChange={e => {
+                            const value = e.target.value;
+                            setInstrument(value);
+                            setInstrumentSuggestions(getSuggestions(value));
+                        }}
+                        onBlur={() => addInstrument(instrument)}
+                        list="instrument-options"
+                    />
                 </label>
+
+                <datalist id="instrument-options">
+                    {instrumentSuggestions.map((item, index) => (
+                        <option key={index} value={item} />
+                    ))}
+                </datalist>
+
+                <datalist id="instrument-options">
+                    {instrumentSuggestions.map((item, index) => (
+                        <option key={index} value={item} />
+                    ))}
+                </datalist>
+
                 <label>Депозит (USDT):
                     <input type="number" step="0.01" value={deposit} onChange={e => setDeposit(e.target.value)} />
                 </label>
@@ -144,6 +172,19 @@ const Calculator = () => {
                 <p>Риск в USDT: {riskValue}</p>
                 {rrRatio && <p>Risk/Reward: {rrRatio}</p>}
             </div>
+
+            <div className="instrument-history">
+                <h4>История инструментов:</h4>
+                <ul>
+                    {history.map(({ name, count }) => (
+                        <li key={name}>
+                            {name} <span style={{ opacity: 0.6 }}>({count})</span>
+                            <button onClick={() => deleteInstrument(name)}>Удалить</button>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+
             {showReport && (
                 <div ref={reportRef} style={{ position: 'absolute', left: '-9999px', top: 0 }}>
                     <div className="report-container">
