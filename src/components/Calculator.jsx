@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { sendReportToNotion } from '../services/notionService';
 import '../styles/styles.css';
 import html2canvas from 'html2canvas';
+import { calculateReport } from '../utils/calculateReport';
+
 
 const Calculator = () => {
     const [reportId, setReportId] = useState('');
@@ -25,78 +27,118 @@ const Calculator = () => {
 
     const reportRef = useRef();
 
+    /*
+     const calculate = () => {
+         const D = parseFloat(deposit);
+         const R = parseFloat(riskSize);
+         const EP = parseFloat(entryPrice);
+         const SL = parseFloat(slPrice);
+         const TP = parseFloat(takeProfitPrice);
+         const slDiff = Math.abs(entryPrice - slPrice);
+ 
+         if (
+             isNaN(D) || D <= 0 ||
+             isNaN(R) || R <= 0 || R > 100 ||
+             isNaN(EP) || EP <= 0 ||
+             isNaN(SL) || SL <= 0
+         ) {
+             alert('Пожалуйста, введите корректные числовые значения. Риск должен быть от 0 до 100%.');
+             return;
+         }
+ 
+         if (direction !== 'buy' && direction !== 'sell') {
+             alert('Выберите направление сделки: покупка или продажа.');
+             return;
+         }
+ 
+         if (takeProfitPrice && isNaN(TP)) {
+             alert('Take Profit должен быть числом.');
+             return;
+         }
+ 
+         const reportId = `ORD-${Date.now()}F`;
+         const RV = +(D * (R / 100)).toFixed(2);
+         const SP = +(Math.abs(EP - SL) / 0.0001).toFixed(1);
+         if (SP === 0) return alert('SL не может совпадать с ценой входа');
+         const VC = +(RV / Math.abs(EP - SL)).toFixed(2);
+         const VV = +(VC * EP).toFixed(2);
+         const RR = TP ? +((Math.abs(TP - EP) / Math.abs(EP - SL)).toFixed(2)) : null;
+ 
+         setReportId(reportId);
+         setDate(new Date().toISOString().split('T')[0]);
+         setRiskValue(RV);
+         setSLPoints(SP);
+         setVCoins(VC);
+         setVValue(VV);
+         setRRRatio(RR);
+ 
+         const reportData = {
+             reportId,
+             instrument,
+             date: new Date().toISOString().split('T')[0],
+             direction,
+             deposit: D,
+             riskSize: R,
+             riskValue: RV,
+             entryPrice: EP,
+             slPrice: SL,
+             slPoints: SP,
+             vCoins: VC,
+             vValue: VV,
+             rrRatio: RR,
+             takeProfitPrice: TP,
+             traderNote,
+             status
+         };
+ 
+         const archive = JSON.parse(localStorage.getItem('reportArchive') || '[]');
+         archive.push(reportData);
+         localStorage.setItem('reportArchive', JSON.stringify(archive));
+ 
+         const databaseId = isBacktest
+             ? 'Backtest-1ea3718e85ac81dd82adffca37528e4b?p=2723718e85ac808094e1ffc452341d0c&pm=c'
+             : process.env.REACT_APP_NOTION_DATABASE_ID;
+ 
+         sendReportToNotion(reportData, databaseId);
+     };
+ 
+ */
+
     const calculate = () => {
-        const D = parseFloat(deposit);
-        const R = parseFloat(riskSize);
-        const EP = parseFloat(entryPrice);
-        const SL = parseFloat(slPrice);
-        const TP = parseFloat(takeProfitPrice);
-        const slDiff = Math.abs(entryPrice - slPrice);
+        try {
+            const reportData = calculateReport({
+                deposit,
+                riskSize,
+                entryPrice,
+                slPrice,
+                takeProfitPrice,
+                direction,
+                instrument,
+                traderNote,
+                status,
+                isBacktest
+            });
 
-        if (
-            isNaN(D) || D <= 0 ||
-            isNaN(R) || R <= 0 || R > 100 ||
-            isNaN(EP) || EP <= 0 ||
-            isNaN(SL) || SL <= 0
-        ) {
-            alert('Пожалуйста, введите корректные числовые значения. Риск должен быть от 0 до 100%.');
-            return;
+            setReportId(reportData.reportId);
+            setDate(reportData.date);
+            setRiskValue(reportData.riskValue);
+            setSLPoints(reportData.slPoints);
+            setVCoins(reportData.vCoins);
+            setVValue(reportData.vValue);
+            setRRRatio(reportData.rrRatio);
+
+            const archive = JSON.parse(localStorage.getItem('reportArchive') || '[]');
+            archive.push(reportData);
+            localStorage.setItem('reportArchive', JSON.stringify(archive));
+
+            const databaseId = isBacktest
+                ? 'Backtest-1ea3718e85ac81dd82adffca37528e4b?p=2723718e85ac808094e1ffc452341d0c&pm=c'
+                : process.env.REACT_APP_NOTION_DATABASE_ID;
+
+            sendReportToNotion(reportData, databaseId);
+        } catch (error) {
+            alert(error.message);
         }
-
-        if (direction !== 'buy' && direction !== 'sell') {
-            alert('Выберите направление сделки: покупка или продажа.');
-            return;
-        }
-
-        if (takeProfitPrice && isNaN(TP)) {
-            alert('Take Profit должен быть числом.');
-            return;
-        }
-
-        const reportId = `ORD-${Date.now()}F`;
-        const RV = +(D * (R / 100)).toFixed(2);
-        const SP = +(Math.abs(EP - SL) / 0.0001).toFixed(1);
-        if (SP === 0) return alert('SL не может совпадать с ценой входа');
-        const VC = +(RV / Math.abs(EP - SL)).toFixed(2);
-        const VV = +(VC * EP).toFixed(2);
-        const RR = TP ? +((Math.abs(TP - EP) / Math.abs(EP - SL)).toFixed(2)) : null;
-
-        setReportId(reportId);
-        setDate(new Date().toISOString().split('T')[0]);
-        setRiskValue(RV);
-        setSLPoints(SP);
-        setVCoins(VC);
-        setVValue(VV);
-        setRRRatio(RR);
-
-        const reportData = {
-            reportId,
-            instrument,
-            date: new Date().toISOString().split('T')[0],
-            direction,
-            deposit: D,
-            riskSize: R,
-            riskValue: RV,
-            entryPrice: EP,
-            slPrice: SL,
-            slPoints: SP,
-            vCoins: VC,
-            vValue: VV,
-            rrRatio: RR,
-            takeProfitPrice: TP,
-            traderNote,
-            status
-        };
-
-        const archive = JSON.parse(localStorage.getItem('reportArchive') || '[]');
-        archive.push(reportData);
-        localStorage.setItem('reportArchive', JSON.stringify(archive));
-
-        const databaseId = isBacktest
-            ? 'Backtest-1ea3718e85ac81dd82adffca37528e4b?p=2723718e85ac808094e1ffc452341d0c&pm=c'
-            : process.env.REACT_APP_NOTION_DATABASE_ID;
-
-        sendReportToNotion(reportData, databaseId);
     };
 
     const exportToImage = () => {
@@ -186,7 +228,7 @@ const Calculator = () => {
                         <p className="report-comment">{traderNote || 'Комментарий отсутствует'}</p>
                         <h3 className="report-section-title">📄 Ордер</h3>
                         <p><strong>ID:</strong> {reportId}</p>
-                        <p><strong>Депозит:</strong> {deposit} USDT</p>
+                        <p><strong>Депозит на сделку:</strong> {deposit} USDT</p>
                         <p><strong>Дата:</strong> {date}</p>
                         <h3 className="report-section-title">💰 Параметры позиции:</h3>
                         <p><strong>Инструмент:</strong> {instrument}</p>
