@@ -10,7 +10,7 @@ import { useInstrumentHistory } from '../hooks/useInstrumentHistory';
 const Calculator = () => {
     const [reportId, setReportId] = useState('');
     const [date, setDate] = useState('');
-    const { addInstrument, getSuggestions, deleteInstrument, history } = useInstrumentHistory();
+    const { addInstrument, getSuggestions, deleteInstrument, history, exportHistoryAsJSON } = useInstrumentHistory();
     const [instrumentSuggestions, setInstrumentSuggestions] = useState([]);
     const [deposit, setDeposit] = useState('');
     const [riskSize, setRiskSize] = useState('');
@@ -183,7 +183,9 @@ const Calculator = () => {
                         </li>
                     ))}
                 </ul>
+                <button onClick={exportHistoryAsJSON}>📤 Экспорт в JSON</button>
             </div>
+
 
             {showReport && (
                 <div ref={reportRef} style={{ position: 'absolute', left: '-9999px', top: 0 }}>
