@@ -73,6 +73,23 @@ const Calculator = () => {
             alert(error.message);
         }
     };
+    const resetForm = () => {
+        setInstrument('');
+        setEntryPrice('');
+        setSLPrice('');
+        setTakeProfitPrice('');
+        setDirection('buy');
+        setTraderNote('');
+        setReportId('');
+        setDate('');
+        setRiskValue('');
+        setSLPoints(0);
+        setVCoins(0);
+        setVValue(0);
+        setRRRatio('');
+        setIsBacktest(false);
+    };
+
 
     const exportToImage = () => {
         setShowReport(true); // включаем отчёт
@@ -192,12 +209,14 @@ const Calculator = () => {
                     </select>
                 </label>
 
-
                 <label>Комментарий трейдера:
                     <textarea value={traderNote} onChange={e => setTraderNote(e.target.value)} rows={4} />
                 </label>
+
                 <button type="button" onClick={calculate}>Рассчитать</button>
                 <button type="button" onClick={exportToImage}>Экспорт в изображение</button>
+                <button type="button" onClick={resetForm}>Очистить</button>
+
             </form>
 
             <div className="results">
@@ -226,6 +245,7 @@ const Calculator = () => {
                     <div className="report-container">
                         <h3 className="report-section-title">📝 Комментарий трейдера</h3>
                         <p className="report-comment">{traderNote || 'Комментарий отсутствует'}</p>
+
                         <h3 className="report-section-title">📄 Ордер</h3>
                         <p><strong>ID:</strong> {reportId}</p>
                         <p><strong>Депозит на сделку:</strong> {deposit} USDT</p>
