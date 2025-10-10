@@ -4,7 +4,10 @@ import '../styles/styles.css';
 import html2canvas from 'html2canvas';
 import { calculateReport } from '../utils/calculateReport';
 import { useInstrumentHistory } from '../hooks/useInstrumentHistory';
+import { useReducer, useEffect } from 'react';
+import { calculatorReducer, initialState } from '../reducers/calculatorReducer';
 
+const [state, dispatch] = useReducer(calculatorReducer, initialState);
 
 
 const Calculator = () => {
