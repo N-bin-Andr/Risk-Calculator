@@ -20,6 +20,7 @@ const Calculator = () => {
     });
     const [entryPrice, setEntryPrice] = useState('');
     const [slPrice, setSLPrice] = useState('');
+    const [slError, setSlError] = useState('');
     const [slPoints, setSLPoints] = useState(0);
     const [takeProfitPrice, setTakeProfitPrice] = useState('');
     const [tpError, setTpError] = useState('');
@@ -183,9 +184,37 @@ const Calculator = () => {
 
                 {isNaN(entryPrice) && <span className="error-text">Введите число</span>}
 
-                <label>Цена Stop Loss (USDT):
-                    <input type="number" step="0.0001" value={slPrice} onChange={e => setSLPrice(e.target.value)} />
+                <label>Stop Loss (USDT):
+                    <input
+                        type="number"
+                        step="0.0001"
+                        value={SLPrice}
+                        onChange={e => {
+                            const value = e.target.value;
+                            setSLPrice(value);
+
+                            const SL = parseFloat(value);
+                            const EP = parseFloat(entryPrice);
+
+                            if (!value || isNaN(SL) || isNaN(EP)) {
+                                setSlError('');
+                                return;
+                            }
+
+                            if (SL === EP) {
+                                setSlError('SL не должен совпадать с ценой входа');
+                            } else if (direction === 'buy' && SL > EP) {
+                                setSlError('SL должен быть ниже цены входа при покупке');
+                            } else if (direction === 'sell' && SL < EP) {
+                                setSlError('SL должен быть выше цены входа при продаже');
+                            } else {
+                                setSlError('');
+                            }
+                        }}
+                    />
                 </label>
+                {slError && <span className="error-text">{slError}</span>}
+
 
                 <label>Take Profit (USDT):
                     <input
@@ -246,10 +275,11 @@ const Calculator = () => {
                 <button
                     type="button"
                     onClick={calculate}
-                    disabled={tpError !== ''}
+                    disabled={tpError !== '' || slError !== ''}
                 >
                     Рассчитать
                 </button>
+
 
                 <button type="button" onClick={exportToImage}>Экспорт в изображение</button>
                 <button type="button" onClick={resetForm}>Очистить</button>
