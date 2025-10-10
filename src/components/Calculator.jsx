@@ -11,42 +11,19 @@ const [state, dispatch] = useReducer(calculatorReducer, initialState);
 
 
 const Calculator = () => {
-    const [state, dispatch] = useReducer(reducer, initialState);
-    const [deposit, setDeposit] = useState(() => {
-        return localStorage.getItem('lastDeposit') || '';
-    });
-    const [riskSize, setRiskSize] = useState(() => {
-        return localStorage.getItem('lastRiskSize') || '';
-    });
-    const [status, setStatus] = useState(() => {
-        return localStorage.getItem('lastStatus') || 'Запланирован';
-    });
-    const [instrumentSuggestions, setInstrumentSuggestions] = useState([]);
+    const savedState = JSON.parse(localStorage.getItem('calculatorState'));
+    const [state, dispatch] = useReducer(calculatorReducer, savedState || initialState);
+
+    useEffect(() => {
+        localStorage.setItem('calculatorState', JSON.stringify(state));
+    }, [state]);
+
+    const [deposit, setDeposit] = useState(() => { return localStorage.getItem('lastDeposit') || ''; });
+    const [riskSize, setRiskSize] = useState(() => { return localStorage.getItem('lastRiskSize') || ''; });
+    const [status, setStatus] = useState(() => { return localStorage.getItem('lastStatus') || 'Запланирован'; });
+
     const { addInstrument, getSuggestions, deleteInstrument, history, exportHistoryAsJSON } = useInstrumentHistory();
-
-    /*const [reportId, setReportId] = useState('');
-    const [date, setDate] = useState('');
-    
-    
-    
-    
-    const [entryPrice, setEntryPrice] = useState('');
-    const [slPrice, setSlPrice] = useState('');
-    const [slError, setSlError] = useState('');
-    const [slPoints, setSLPoints] = useState(0);
-    const [takeProfitPrice, setTakeProfitPrice] = useState('');
-    const [tpError, setTpError] = useState('');
-    const [instrument, setInstrument] = useState('');
-    const [direction, setDirection] = useState('buy');
-    const [traderNote, setTraderNote] = useState('');
-    const [riskValue, setRiskValue] = useState('');
-    const [vCoins, setVCoins] = useState(0);
-    const [vValue, setVValue] = useState(0);
-    const [rrRatio, setRRRatio] = useState('');
-    const [isBacktest, setIsBacktest] = useState(false);
-    
-    */
-
+    const [instrumentSuggestions, setInstrumentSuggestions] = useState([]);
     const reportRef = useRef();
     const [showReport, setShowReport] = useState(false);
     const initialState = {
@@ -101,52 +78,9 @@ const Calculator = () => {
         }
     };
 
-
-
-    /*const calculate = () => {
-        try {
-            const reportData = calculateReport({
-                deposit,
-                riskSize,
-                entryPrice,
-                slPrice,
-                takeProfitPrice,
-                direction,
-                instrument,
-                traderNote,
-                status,
-                isBacktest
-            });
-
-            setReportId(reportData.reportId);
-            setDate(reportData.date);
-            setRiskValue(reportData.riskValue);
-            setSLPoints(reportData.slPoints);
-            setVCoins(reportData.vCoins);
-            setVValue(reportData.vValue);
-            setRRRatio(reportData.rrRatio);
-
-            const archive = JSON.parse(localStorage.getItem('reportArchive') || '[]');
-            archive.push(reportData);
-            localStorage.setItem('reportArchive', JSON.stringify(archive));
-
-            const databaseId = isBacktest
-                ? 'Backtest-1ea3718e85ac81dd82adffca37528e4b?p=2723718e85ac808094e1ffc452341d0c&pm=c'
-                : process.env.REACT_APP_NOTION_DATABASE_ID;
-
-            sendReportToNotion(reportData, databaseId);
-            } catch (error) {
-            alert(error.message);
-        }
-    };
-    */
-
-
     const resetForm = () => {
         dispatch({ type: 'RESET_FORM' });
     };
-
-
 
     const exportToImage = () => {
         setShowReport(true); // включаем отчёт
