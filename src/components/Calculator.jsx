@@ -6,6 +6,8 @@ import { calculateReport } from '../utils/calculateReport';
 import { useInstrumentHistory } from '../hooks/useInstrumentHistory';
 import { useReducer, useEffect } from 'react';
 import { calculatorReducer, initialState } from '../reducers/calculatorReducer';
+import { validateFields } from '../utils/validateCalculator';
+
 
 const [state, dispatch] = useReducer(calculatorReducer, initialState);
 
@@ -46,38 +48,62 @@ const Calculator = () => {
         showReport: false,
     };
 
-
-
     const calculate = () => {
-        try {
-            const reportData = calculateReport({
-                reportId: state.reportId,
-                date: state.date,
-                instrument: state.instrument,
-                entryPrice: state.entryPrice,
-                SLPrice: state.slPrice,
-                takeProfitPrice: state.takeProfitPrice,
-                direction: state.direction,
-                traderNote: state.traderNote,
-                riskValue: state.riskValue,
-                deposit,
-                riskSize,
-                status,
-                isBacktest: state.isBacktest,
-            });
+        const errors = validateFields(state);
 
+        dispatch({ type: 'SET_FIELD', field: 'tpError', value: errors.tpError || '' });
+        dispatch({ type: 'SET_FIELD', field: 'slError', value: errors.slError || '' });
+
+        if (Object.keys(errors).length > 0) {
+            alert('Пожалуйста, исправьте ошибки перед расчётом');
+            return;
+        }
+
+        try {
+            const reportData = calculateReport({ ...state, deposit, riskSize, status });
             dispatch({ type: 'SET_FIELD', field: 'slPoints', value: reportData.slPoints });
             dispatch({ type: 'SET_FIELD', field: 'vCoins', value: reportData.vCoins });
             dispatch({ type: 'SET_FIELD', field: 'vValue', value: reportData.vValue });
             dispatch({ type: 'SET_FIELD', field: 'rrRatio', value: reportData.rrRatio });
             dispatch({ type: 'SET_FIELD', field: 'showReport', value: true });
-
             addInstrument(state.instrument);
         } catch (error) {
             alert(error.message);
         }
     };
 
+
+    /*
+        const calculate = () => {
+            try {
+                const reportData = calculateReport({
+                    reportId: state.reportId,
+                    date: state.date,
+                    instrument: state.instrument,
+                    entryPrice: state.entryPrice,
+                    SLPrice: state.slPrice,
+                    takeProfitPrice: state.takeProfitPrice,
+                    direction: state.direction,
+                    traderNote: state.traderNote,
+                    riskValue: state.riskValue,
+                    deposit,
+                    riskSize,
+                    status,
+                    isBacktest: state.isBacktest,
+                });
+    
+                dispatch({ type: 'SET_FIELD', field: 'slPoints', value: reportData.slPoints });
+                dispatch({ type: 'SET_FIELD', field: 'vCoins', value: reportData.vCoins });
+                dispatch({ type: 'SET_FIELD', field: 'vValue', value: reportData.vValue });
+                dispatch({ type: 'SET_FIELD', field: 'rrRatio', value: reportData.rrRatio });
+                dispatch({ type: 'SET_FIELD', field: 'showReport', value: true });
+    
+                addInstrument(state.instrument);
+            } catch (error) {
+                alert(error.message);
+            }
+        };
+    */
     const resetForm = () => {
         dispatch({ type: 'RESET_FORM' });
     };
