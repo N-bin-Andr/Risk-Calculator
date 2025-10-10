@@ -88,12 +88,25 @@ button:hover {
     background-color: #005fa3;
 }
 
-.error-text {
-    color: #d00;
-    font-size: 0.9em;
-    margin-top: 4px;
-    display: block;
+.form-errors {
+    background-color: #ffecec;
+    border: 1px solid #f5c2c2;
+    padding: 10px;
+    margin-top: 12px;
+    border-radius: 6px;
+    color: #a00;
+    font-size: 0.95em;
 }
+
+.form-errors ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.error-icon {
+    margin-right: 6px;
+}
+
 
 
 /* Результаты */
@@ -144,6 +157,8 @@ label input[type="checkbox"] {
     color: #0078d4;
     margin-top: 20px;
     margin-bottom: 10px;
+    vertical-align: middle;
+    color: #555;
 }
 
 .report-comment {
