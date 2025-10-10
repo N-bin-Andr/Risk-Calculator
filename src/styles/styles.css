@@ -88,6 +88,14 @@ button:hover {
     background-color: #005fa3;
 }
 
+.error-text {
+    color: #d00;
+    font-size: 0.9em;
+    margin-top: 4px;
+    display: block;
+}
+
+
 /* Результаты */
 .results {
     margin-top: 30px;

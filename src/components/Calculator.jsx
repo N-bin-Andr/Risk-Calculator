@@ -22,6 +22,7 @@ const Calculator = () => {
     const [slPrice, setSLPrice] = useState('');
     const [slPoints, setSLPoints] = useState(0);
     const [takeProfitPrice, setTakeProfitPrice] = useState('');
+    const [tpError, setTpError] = useState('');
     const [instrument, setInstrument] = useState('');
     const [direction, setDirection] = useState('buy');
     const [traderNote, setTraderNote] = useState('');
@@ -185,9 +186,38 @@ const Calculator = () => {
                 <label>Цена Stop Loss (USDT):
                     <input type="number" step="0.0001" value={slPrice} onChange={e => setSLPrice(e.target.value)} />
                 </label>
+
                 <label>Take Profit (USDT):
-                    <input type="number" step="0.0001" value={takeProfitPrice} onChange={e => setTakeProfitPrice(e.target.value)} />
+                    <input
+                        type="number"
+                        step="0.0001"
+                        value={takeProfitPrice}
+                        onChange={e => {
+                            const value = e.target.value;
+                            setTakeProfitPrice(value);
+
+                            const TP = parseFloat(value);
+                            const EP = parseFloat(entryPrice);
+
+                            if (!value || isNaN(TP) || isNaN(EP)) {
+                                setTpError('');
+                                return;
+                            }
+
+                            if (TP === EP) {
+                                setTpError('TP не должен совпадать с ценой входа');
+                            } else if (direction === 'buy' && TP < EP) {
+                                setTpError('TP должен быть выше цены входа при покупке');
+                            } else if (direction === 'sell' && TP > EP) {
+                                setTpError('TP должен быть ниже цены входа при продаже');
+                            } else {
+                                setTpError('');
+                            }
+                        }}
+                    />
                 </label>
+                {tpError && <span className="error-text">{tpError}</span>}
+
                 <label>Направление сделки:
                     <select value={direction} onChange={e => setDirection(e.target.value)}>
                         <option value="Buy">Покупка</option>
@@ -213,7 +243,14 @@ const Calculator = () => {
                     <textarea value={traderNote} onChange={e => setTraderNote(e.target.value)} rows={4} />
                 </label>
 
-                <button type="button" onClick={calculate}>Рассчитать</button>
+                <button
+                    type="button"
+                    onClick={calculate}
+                    disabled={tpError !== ''}
+                >
+                    Рассчитать
+                </button>
+
                 <button type="button" onClick={exportToImage}>Экспорт в изображение</button>
                 <button type="button" onClick={resetForm}>Очистить</button>
 
@@ -244,15 +281,15 @@ const Calculator = () => {
                 <div ref={reportRef} style={{ position: 'absolute', left: '-9999px', top: 0 }}>
                     <div className="report-container">
                         <h3 className="report-section-title">📝 Комментарий трейдера</h3>
-                        <p className="report-comment">{traderNote || 'Комментарий отсутствует'}</p>
+                        <p className="report-comment">{traderNote || 'Рассматриваю сделку:'}</p>
 
                         <h3 className="report-section-title">📄 Ордер</h3>
                         <p><strong>ID:</strong> {reportId}</p>
                         <p><strong>Депозит на сделку:</strong> {deposit} USDT</p>
-                        <p><strong>Дата:</strong> {date}</p>
-                        <h3 className="report-section-title">💰 Параметры позиции:</h3>
                         <p><strong>Инструмент:</strong> {instrument}</p>
                         <p><strong>Направление сделки:</strong> {direction === 'buy' ? 'Buy' : 'Sell'}</p>
+                        <p><strong>Дата:</strong> {date}</p>
+                        <h3 className="report-section-title">💰 Параметры позиции:</h3>
                         <p><strong>Ценовой уровень входа:</strong> {entryPrice} USDT</p>
                         <p><strong>Размер позиции (в активах):</strong> {typeof vCoins === 'number' ? vCoins.toFixed(2) : '—'}</p>
                         <p><strong>Размер позиции (в USDT):</strong> {typeof vValue === 'number' ? vValue.toFixed(2) : '—'}</p>
