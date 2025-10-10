@@ -19,7 +19,7 @@ const Calculator = () => {
         return localStorage.getItem('lastRiskSize') || '';
     });
     const [entryPrice, setEntryPrice] = useState('');
-    const [slPrice, setSLPrice] = useState('');
+    const [slPrice, setSlPrice] = useState('');
     const [slError, setSlError] = useState('');
     const [slPoints, setSLPoints] = useState(0);
     const [takeProfitPrice, setTakeProfitPrice] = useState('');
@@ -78,7 +78,7 @@ const Calculator = () => {
     const resetForm = () => {
         setInstrument('');
         setEntryPrice('');
-        setSLPrice('');
+        setSlPrice('');
         setTakeProfitPrice('');
         setDirection('buy');
         setTraderNote('');
@@ -188,10 +188,10 @@ const Calculator = () => {
                     <input
                         type="number"
                         step="0.0001"
-                        value={SLPrice}
+                        value={slPrice}
                         onChange={e => {
                             const value = e.target.value;
-                            setSLPrice(value);
+                            setSlPrice(value);
 
                             const SL = parseFloat(value);
                             const EP = parseFloat(entryPrice);
@@ -293,6 +293,24 @@ const Calculator = () => {
                 {rrRatio && <p>Risk/Reward: {rrRatio}</p>}
             </div>
 
+            {(tpError || slError) && (
+                <div className="form-errors">
+                    <ul>
+                        {tpError && (
+                            <li>
+                                <span className="error-icon">⚠️</span> {tpError}
+                            </li>
+                        )}
+                        {slError && (
+                            <li>
+                                <span className="error-icon">⚠️</span> {slError}
+                            </li>
+                        )}
+                    </ul>
+                </div>
+            )}
+
+
             <div className="instrument-history">
                 <h4>История инструментов:</h4>
                 <ul>
@@ -312,11 +330,14 @@ const Calculator = () => {
                     <div className="report-container">
                         <h3 className="report-section-title">📝 Комментарий трейдера</h3>
                         <p className="report-comment">{traderNote || 'Рассматриваю сделку:'}</p>
-
+                        <h3 className="report-section-title">
+                            <i className="fas fa-wrench" style={{ marginRight: '8px' }}></i>
+                            Инструмент
+                        </h3>
+                        <p><strong></strong> {instrument}</p>
                         <h3 className="report-section-title">📄 Ордер</h3>
                         <p><strong>ID:</strong> {reportId}</p>
                         <p><strong>Депозит на сделку:</strong> {deposit} USDT</p>
-                        <p><strong>Инструмент:</strong> {instrument}</p>
                         <p><strong>Направление сделки:</strong> {direction === 'buy' ? 'Buy' : 'Sell'}</p>
                         <p><strong>Дата:</strong> {date}</p>
                         <h3 className="report-section-title">💰 Параметры позиции:</h3>
