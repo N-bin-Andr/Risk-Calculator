@@ -8,16 +8,25 @@ import { useInstrumentHistory } from '../hooks/useInstrumentHistory';
 
 
 const Calculator = () => {
-    const [reportId, setReportId] = useState('');
-    const [date, setDate] = useState('');
-    const { addInstrument, getSuggestions, deleteInstrument, history, exportHistoryAsJSON } = useInstrumentHistory();
-    const [instrumentSuggestions, setInstrumentSuggestions] = useState([]);
+    const [state, dispatch] = useReducer(reducer, initialState);
     const [deposit, setDeposit] = useState(() => {
         return localStorage.getItem('lastDeposit') || '';
     });
     const [riskSize, setRiskSize] = useState(() => {
         return localStorage.getItem('lastRiskSize') || '';
     });
+    const [status, setStatus] = useState(() => {
+        return localStorage.getItem('lastStatus') || 'Запланирован';
+    });
+    const [instrumentSuggestions, setInstrumentSuggestions] = useState([]);
+    const { addInstrument, getSuggestions, deleteInstrument, history, exportHistoryAsJSON } = useInstrumentHistory();
+
+    /*const [reportId, setReportId] = useState('');
+    const [date, setDate] = useState('');
+    
+    
+    
+    
     const [entryPrice, setEntryPrice] = useState('');
     const [slPrice, setSlPrice] = useState('');
     const [slError, setSlError] = useState('');
@@ -32,14 +41,66 @@ const Calculator = () => {
     const [vValue, setVValue] = useState(0);
     const [rrRatio, setRRRatio] = useState('');
     const [isBacktest, setIsBacktest] = useState(false);
-    const [status, setStatus] = useState(() => {
-        return localStorage.getItem('lastStatus') || 'Запланирован';
-    });
-    const [showReport, setShowReport] = useState(false);
+    
+    */
 
     const reportRef = useRef();
+    const [showReport, setShowReport] = useState(false);
+    const initialState = {
+        reportId: '',
+        date: '',
+        instrument: '',
+        entryPrice: '',
+        slPrice: '',
+        takeProfitPrice: '',
+        direction: 'buy',
+        traderNote: '',
+        riskValue: '',
+        slPoints: 0,
+        vCoins: 0,
+        vValue: 0,
+        rrRatio: '',
+        isBacktest: false,
+        tpError: '',
+        slError: '',
+        showReport: false,
+    };
+
+
 
     const calculate = () => {
+        try {
+            const reportData = calculateReport({
+                reportId: state.reportId,
+                date: state.date,
+                instrument: state.instrument,
+                entryPrice: state.entryPrice,
+                SLPrice: state.slPrice,
+                takeProfitPrice: state.takeProfitPrice,
+                direction: state.direction,
+                traderNote: state.traderNote,
+                riskValue: state.riskValue,
+                deposit,
+                riskSize,
+                status,
+                isBacktest: state.isBacktest,
+            });
+
+            dispatch({ type: 'SET_FIELD', field: 'slPoints', value: reportData.slPoints });
+            dispatch({ type: 'SET_FIELD', field: 'vCoins', value: reportData.vCoins });
+            dispatch({ type: 'SET_FIELD', field: 'vValue', value: reportData.vValue });
+            dispatch({ type: 'SET_FIELD', field: 'rrRatio', value: reportData.rrRatio });
+            dispatch({ type: 'SET_FIELD', field: 'showReport', value: true });
+
+            addInstrument(state.instrument);
+        } catch (error) {
+            alert(error.message);
+        }
+    };
+
+
+
+    /*const calculate = () => {
         try {
             const reportData = calculateReport({
                 deposit,
@@ -71,26 +132,17 @@ const Calculator = () => {
                 : process.env.REACT_APP_NOTION_DATABASE_ID;
 
             sendReportToNotion(reportData, databaseId);
-        } catch (error) {
+            } catch (error) {
             alert(error.message);
         }
     };
+    */
+
+
     const resetForm = () => {
-        setInstrument('');
-        setEntryPrice('');
-        setSlPrice('');
-        setTakeProfitPrice('');
-        setDirection('buy');
-        setTraderNote('');
-        setReportId('');
-        setDate('');
-        setRiskValue('');
-        setSLPoints(0);
-        setVCoins(0);
-        setVValue(0);
-        setRRRatio('');
-        setIsBacktest(false);
+        dispatch({ type: 'RESET_FORM' });
     };
+
 
 
     const exportToImage = () => {
@@ -188,27 +240,27 @@ const Calculator = () => {
                     <input
                         type="number"
                         step="0.0001"
-                        value={slPrice}
+                        value={state.slPrice}
                         onChange={e => {
                             const value = e.target.value;
-                            setSlPrice(value);
+                            dispatch({ type: 'SET_FIELD', field: 'slPrice', value });
 
                             const SL = parseFloat(value);
-                            const EP = parseFloat(entryPrice);
+                            const EP = parseFloat(state.entryPrice);
 
                             if (!value || isNaN(SL) || isNaN(EP)) {
-                                setSlError('');
+                                dispatch({ type: 'SET_FIELD', field: 'slError', value: '' });
                                 return;
                             }
 
                             if (SL === EP) {
-                                setSlError('SL не должен совпадать с ценой входа');
-                            } else if (direction === 'buy' && SL > EP) {
-                                setSlError('SL должен быть ниже цены входа при покупке');
-                            } else if (direction === 'sell' && SL < EP) {
-                                setSlError('SL должен быть выше цены входа при продаже');
+                                dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL не должен совпадать с ценой входа' });
+                            } else if (state.direction === 'buy' && SL > EP) {
+                                dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть ниже цены входа при покупке' });
+                            } else if (state.direction === 'sell' && SL < EP) {
+                                dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть выше цены входа при продаже' });
                             } else {
-                                setSlError('');
+                                dispatch({ type: 'SET_FIELD', field: 'slError', value: '' });
                             }
                         }}
                     />
@@ -275,14 +327,18 @@ const Calculator = () => {
                 <button
                     type="button"
                     onClick={calculate}
-                    disabled={tpError !== '' || slError !== ''}
+                    disabled={state.tpError !== '' || state.slError !== ''}
                 >
                     Рассчитать
                 </button>
 
 
+
                 <button type="button" onClick={exportToImage}>Экспорт в изображение</button>
-                <button type="button" onClick={resetForm}>Очистить</button>
+                <button type="button" onClick={() => dispatch({ type: 'RESET_FORM' })}>
+                    Очистить
+                </button>
+
 
             </form>
 
@@ -293,23 +349,14 @@ const Calculator = () => {
                 {rrRatio && <p>Risk/Reward: {rrRatio}</p>}
             </div>
 
-            {(tpError || slError) && (
+            {(state.tpError || state.slError) && (
                 <div className="form-errors">
                     <ul>
-                        {tpError && (
-                            <li>
-                                <span className="error-icon">⚠️</span> {tpError}
-                            </li>
-                        )}
-                        {slError && (
-                            <li>
-                                <span className="error-icon">⚠️</span> {slError}
-                            </li>
-                        )}
+                        {state.tpError && <li><span className="error-icon">⚠️</span> {state.tpError}</li>}
+                        {state.slError && <li><span className="error-icon">⚠️</span> {state.slError}</li>}
                     </ul>
                 </div>
             )}
-
 
             <div className="instrument-history">
                 <h4>История инструментов:</h4>
