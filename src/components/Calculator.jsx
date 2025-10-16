@@ -46,7 +46,15 @@ const Calculator = () => {
             return;
         }
 
-        const reportId = `ORD(${new Date().toLocaleDateString()})F`;
+        const now = new Date();
+        const day = String(now.getDate()).padStart(2, '0');
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const year = now.getFullYear();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const reportId = `ORD${day}${month}${year}${hours}${minutes}F`;
+        dispatch({ type: 'SET_FIELD', field: 'reportId', value: reportId });
+
         dispatch({ type: 'SET_FIELD', field: 'reportId', value: reportId });
 
         const date = new Date().toLocaleDateString();
