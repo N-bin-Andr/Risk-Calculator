@@ -182,13 +182,13 @@ const Calculator = () => {
                             }
 
                             if (SL === EP) {
-                                dispatch({ type: 'SET_FIELD', field: 'state.slError', value: 'SL не должен совпадать с ценой входа' });
-                            } else if (state.direction === 'Buy' && SL > EP) {
-                                dispatch({ type: 'SET_FIELD', field: 'state.slError', value: 'SL должен быть ниже цены входа при покупке' });
-                            } else if (state.direction === 'Sell' && SL < EP) {
-                                dispatch({ type: 'SET_FIELD', field: 'state.slError', value: 'SL должен быть выше цены входа при продаже' });
+                                dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL не должен совпадать с ценой входа' });
+                            } else if (state.direction === 'buy' && SL > EP) {
+                                dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть ниже цены входа при покупке' });
+                            } else if (state.direction === 'sell' && SL < EP) {
+                                dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть выше цены входа при продаже' });
                             } else {
-                                dispatch({ type: 'SET_FIELD', field: 'state.slError', value: '' });
+                                dispatch({ type: 'SET_FIELD', field: 'slError', value: '' });
                             }
                         }}
                     />
@@ -215,9 +215,9 @@ const Calculator = () => {
 
                             if (TP === EP) {
                                 dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP не должен совпадать с ценой входа' });
-                            } else if (state.direction === 'Buy' && TP < EP) {
+                            } else if (state.direction === 'buy' && TP < EP) {
                                 dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP должен быть выше цены входа при покупке' });
-                            } else if (state.direction === 'Sell' && TP > EP) {
+                            } else if (state.direction === 'sell' && TP > EP) {
                                 dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP должен быть ниже цены входа при продаже' });
                             } else {
                                 dispatch({ type: 'SET_FIELD', field: 'tpError', value: '' });
@@ -230,8 +230,8 @@ const Calculator = () => {
 
                 <label>Направление сделки:
                     <select value={state.direction} onChange={handleChange('direction')}>
-                        <option value="Buy">Buy</option>
-                        <option value="Sell">Sell</option>
+                        <option value="buy">Покупка</option>
+                        <option value="sell">Продажа</option>
                     </select>
                 </label>
 
