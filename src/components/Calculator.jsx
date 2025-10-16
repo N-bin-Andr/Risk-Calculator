@@ -22,7 +22,6 @@ const Calculator = () => {
         { ...initialState, ...(savedState || {}) }
     );
 
-
     useEffect(() => {
         localStorage.setItem('calculatorState', JSON.stringify(state));
     }, [state]);
@@ -47,11 +46,19 @@ const Calculator = () => {
             return;
         }
 
+        const reportId = `ORD(${new Date().toLocaleDateString()})F`;
+        dispatch({ type: 'SET_FIELD', field: 'reportId', value: reportId });
+
+        const date = new Date().toLocaleDateString();
+        dispatch({ type: 'SET_FIELD', field: 'date', value: date });
+
+
         try {
             const reportData = calculateReport({ ...state, deposit, riskSize, status });
             dispatch({ type: 'SET_FIELD', field: 'slPoints', value: reportData.slPoints });
             dispatch({ type: 'SET_FIELD', field: 'vCoins', value: reportData.vCoins });
             dispatch({ type: 'SET_FIELD', field: 'vValue', value: reportData.vValue });
+            dispatch({ type: 'SET_FIELD', field: 'riskValue', value: reportData.riskValue });
             dispatch({ type: 'SET_FIELD', field: 'rrRatio', value: reportData.rrRatio });
             dispatch({ type: 'SET_FIELD', field: 'showReport', value: true });
             addInstrument(state.instrument);
