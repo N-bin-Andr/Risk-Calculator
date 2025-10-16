@@ -250,7 +250,6 @@ const Calculator = () => {
                     </select>
                 </label>
 
-
                 <label>Статус сделки:
                     <select
                         value={status}
@@ -266,10 +265,16 @@ const Calculator = () => {
                     </select>
                 </label>
 
-                <label>Комментарий трейдера:
-                    <textarea value={state.traderNote}
-                        onChange={e => dispatch({ type: 'SET_FIELD', field: 'state.traderNote', value: e.target.value })} rows={4} />
-                </label>
+                <label htmlFor="traderNote">Комментарий трейдера:</label>
+                <textarea
+                    id="traderNote"
+                    value={state.traderNote}
+                    onChange={(e) =>
+                        dispatch({ type: 'SET_FIELD', field: 'traderNote', value: e.target.value })
+                    }
+                    rows={4}
+                    style={{ width: '100%', resize: 'vertical' }}
+                />
 
                 <button
                     type="button"
@@ -279,13 +284,10 @@ const Calculator = () => {
                     Рассчитать
                 </button>
 
-
-
                 <button type="button" onClick={exportToImage}>Экспорт в изображение</button>
                 <button type="button" onClick={() => dispatch({ type: 'RESET_FORM' })}>
                     Очистить
                 </button>
-
 
             </form>
 
