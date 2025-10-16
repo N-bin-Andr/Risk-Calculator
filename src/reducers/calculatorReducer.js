@@ -1,30 +1,37 @@
 export const initialState = {
-    reportId: '',
-    date: '',
+    tpError: '',
+    slError: '',
+    isBacktest: false,
+    direction: 'Buy',
     instrument: '',
     entryPrice: '',
     slPrice: '',
     takeProfitPrice: '',
-    direction: 'buy',
     traderNote: '',
-    riskValue: '',
-    slPoints: 0,
+    reportId: '',
+    date: '',
+    showReport: false,
     vCoins: 0,
     vValue: 0,
     rrRatio: '',
-    isBacktest: false,
-    tpError: '',
-    slError: '',
-    showReport: false,
+    riskValue: '',
+    slPoints: 0,
 };
+
+
 
 export function calculatorReducer(state, action) {
     switch (action.type) {
         case 'SET_FIELD':
-            return { ...state, [action.field]: action.value };
+            return {
+                ...state,
+                [action.field]: action.value,
+            };
         case 'RESET_FORM':
-            return { ...initialState };
+            return initialState;
         default:
             return state;
     }
 }
+
+
