@@ -2,7 +2,7 @@ export const initialState = {
     tpError: '',
     slError: '',
     isBacktest: false,
-    direction: 'buy',
+    direction: '',
     instrument: '',
     entryPrice: '',
     slPrice: '',

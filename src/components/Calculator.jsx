@@ -17,6 +17,8 @@ const Calculator = () => {
         savedState = null;
     }
 
+
+
     const [state, dispatch] = useReducer(
         calculatorReducer,
         { ...initialState, ...(savedState || {}) }
@@ -35,7 +37,7 @@ const Calculator = () => {
     const reportRef = useRef();
     const [showReport, setShowReport] = useState(false);
 
-    const calculate = () => {
+    const calculate = async () => {
         const errors = validateFields(state);
 
         dispatch({ type: 'SET_FIELD', field: 'tpError', value: errors.tpError || '' });
@@ -70,6 +72,13 @@ const Calculator = () => {
             dispatch({ type: 'SET_FIELD', field: 'rrRatio', value: reportData.rrRatio });
             dispatch({ type: 'SET_FIELD', field: 'showReport', value: true });
             addInstrument(state.instrument);
+            await sendReportToNotion(
+                { ...state, deposit, riskSize, status },
+                false,
+                process.env.REACT_APP_NOTION_TOKEN,
+                process.env.REACT_APP_NOTION_DATABASE_ID
+            );
+
         } catch (error) {
             alert(error.message);
         }
@@ -224,10 +233,14 @@ const Calculator = () => {
                             const EP = parseFloat(state.entryPrice);
 
                             if (!value || isNaN(TP) || isNaN(EP)) {
-                                dispatch({ type: 'SET_FIELD', field: 'state.tpError', value: e.target.value });
+                                dispatch({ type: 'SET_FIELD', field: 'tpError', value: e.target.value });
                                 return;
                             }
 
+                            if (!state.direction) {
+                                dispatch({ type: 'SET_FIELD', field: 'tpError', value: '' });
+                                return;
+                            }
                             if (TP === EP) {
                                 dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP не должен совпадать с ценой входа' });
                             } else if (state.direction === 'buy' && TP < EP) {
@@ -237,7 +250,6 @@ const Calculator = () => {
                             } else {
                                 dispatch({ type: 'SET_FIELD', field: 'tpError', value: '' });
                             }
-
                         }}
                     />
                 </label>
@@ -245,6 +257,7 @@ const Calculator = () => {
 
                 <label>Направление сделки:
                     <select value={state.direction} onChange={handleChange('direction')}>
+                        <option value="">— Выберите —</option>
                         <option value="buy">Покупка</option>
                         <option value="sell">Продажа</option>
                     </select>
