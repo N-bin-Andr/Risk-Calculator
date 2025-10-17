@@ -18,15 +18,43 @@ const Calculator = () => {
     }
 
 
-
     const [state, dispatch] = useReducer(
         calculatorReducer,
         { ...initialState, ...(savedState || {}) }
     );
 
     useEffect(() => {
-        localStorage.setItem('calculatorState', JSON.stringify(state));
-    }, [state]);
+        const EP = parseFloat(state.entryPrice);
+        const SL = parseFloat(state.slPrice);
+        const TP = parseFloat(state.takeProfitPrice);
+
+        // SL проверка
+        if (!isNaN(SL) && !isNaN(EP) && state.direction) {
+            if (SL === EP) {
+                dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL не должен совпадать с ценой входа' });
+            } else if (state.direction === 'buy' && SL > EP) {
+                dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть ниже цены входа при покупке' });
+            } else if (state.direction === 'sell' && SL < EP) {
+                dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть выше цены входа при продаже' });
+            } else {
+                dispatch({ type: 'SET_FIELD', field: 'slError', value: '' });
+            }
+        }
+
+        // TP проверка
+        if (!isNaN(TP) && !isNaN(EP) && state.direction) {
+            if (TP === EP) {
+                dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP не должен совпадать с ценой входа' });
+            } else if (state.direction === 'buy' && TP < EP) {
+                dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP должен быть выше цены входа при покупке' });
+            } else if (state.direction === 'sell' && TP > EP) {
+                dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP должен быть ниже цены входа при продаже' });
+            } else {
+                dispatch({ type: 'SET_FIELD', field: 'tpError', value: '' });
+            }
+        }
+    }, [state.entryPrice, state.slPrice, state.takeProfitPrice]);
+
 
     const [deposit, setDeposit] = useState(() => { return localStorage.getItem('lastDeposit') || ''; });
     const [riskSize, setRiskSize] = useState(() => { return localStorage.getItem('lastRiskSize') || ''; });
