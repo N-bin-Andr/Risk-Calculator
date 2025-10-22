@@ -107,6 +107,22 @@ textarea {
     resize: vertical;
 }
 
+.report-section {
+    border: 1px solid #ccc;
+    padding: 16px;
+    margin-top: 20px;
+    border-radius: 8px;
+    background-color: #fdfdfd;
+}
+
+.report-section legend {
+    font-weight: bold;
+    font-size: 16px;
+    padding: 0 8px;
+    color: #333;
+}
+
+
 /* Кнопки */
 .button-group {
     display: flex;

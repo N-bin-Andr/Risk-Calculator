@@ -383,12 +383,15 @@ const Calculator = () => {
                 </fieldset>
 
 
-                <div className="results">
-                    <p>Размер позиции (в активе): {typeof state.vCoins === 'number' ? state.vCoins.toFixed(2) : '—'}</p>
-                    <p>Размер позиции (USDT): {typeof state.vValue === 'number' ? state.vValue.toFixed(2) : '—'}</p>
-                    <p>Риск в USDT: {typeof state.riskValue === 'number' ? state.riskValue.toFixed(2) : '—'}</p>
-                    {state.rrRatio && <p>Risk/Reward: {state.rrRatio}</p>}
-                </div>
+                <fieldset className="report-section">
+                    <legend>📊 Результаты расчёта</legend>
+                    <div className="results">
+                        <p>Размер позиции (в активе): {typeof state.vCoins === 'number' ? state.vCoins.toFixed(2) : '—'}</p>
+                        <p>Размер позиции (USDT): {typeof state.vValue === 'number' ? state.vValue.toFixed(2) : '—'}</p>
+                        <p>Риск в USDT: {typeof state.riskValue === 'number' ? state.riskValue.toFixed(2) : '—'}</p>
+                        {state.rrRatio && <p>Risk/Reward: {state.rrRatio}</p>}
+                    </div>
+                </fieldset>
 
                 {/* Кнопки */}
                 <div className="button-group">
@@ -416,8 +419,6 @@ const Calculator = () => {
                 </div>
             </form>
 
-
-
             {(state.tpError || state.slError) && (
                 <div className="form-errors">
                     <ul>
@@ -426,8 +427,6 @@ const Calculator = () => {
                     </ul>
                 </div>
             )}
-
-
 
             <div className="state.instrument-history">
                 <h4>История инструментов:</h4>
