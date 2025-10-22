@@ -173,6 +173,7 @@ const Calculator = () => {
         <div className="calculator">
             <h2>Расчёт параметров ордера</h2>
             <form>
+                {/*   
                 <label>
                     <input
                         type="checkbox"
@@ -187,10 +188,24 @@ const Calculator = () => {
                     />
                     Backtest
                 </label>
+                
+                */}
+                <div className="inline-checkbox">
+                    <input
+                        type="checkbox"
+                        id="isBacktest"
+                        checked={state.isBacktest}
+                        onChange={e =>
+                            dispatch({ type: 'SET_FIELD', field: 'isBacktest', value: e.target.checked })
+                        }
+                    />
+                    <label htmlFor="isBacktest">Это бэктест</label>
+                </div>
+
 
                 {/* Блок 1: Направление и инструмент */}
                 <fieldset className="form-section">
-                    <legend>🧭 Направление сделки</legend>
+                    <legend>💰 Параметры позиции:</legend>
                     <select
                         value={state.direction}
                         onChange={e =>
@@ -228,6 +243,18 @@ const Calculator = () => {
                 {/* Блок 2: Цены и статус */}
                 <fieldset className="form-section">
                     <legend>📈 Параметры позиции</legend>
+                    <label>Депозит (USDT):
+                        <input
+                            type="number"
+                            step="0.01"
+                            value={deposit}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setDeposit(value);
+                                localStorage.setItem('lastDeposit', value);
+                            }}
+                        />
+                    </label>
                     <div title={!isDirectionChosen ? tooltipText : ''}>
                         <label>Цена входа:
                             <input
@@ -241,41 +268,6 @@ const Calculator = () => {
                         </label>
                     </div>
                     {isNaN(state.entryPrice) && <span className="error-text">Введите число</span>}
-
-                    <div title={!isDirectionChosen ? tooltipText : ''}>
-                        <label>Stop Loss (USDT):
-                            <input
-                                type="number"
-                                step="0.0001"
-                                value={state.slPrice}
-                                className={state.slError ? 'input-error' : ''}
-                                onChange={e => {
-                                    const value = e.target.value;
-                                    dispatch({ type: 'SET_FIELD', field: 'slPrice', value: e.target.value });
-
-                                    const SL = parseFloat(value);
-                                    const EP = parseFloat(state.entryPrice);
-
-                                    if (!value || isNaN(SL) || isNaN(EP)) {
-                                        dispatch({ type: 'SET_FIELD', field: 'state.slError', value: e.target.value });
-                                        return;
-                                    }
-
-                                    if (SL === EP) {
-                                        dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL не должен совпадать с ценой входа' });
-                                    } else if (state.direction === 'buy' && SL > EP) {
-                                        dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть ниже цены входа при покупке' });
-                                    } else if (state.direction === 'sell' && SL < EP) {
-                                        dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть выше цены входа при продаже' });
-                                    } else {
-                                        dispatch({ type: 'SET_FIELD', field: 'slError', value: '' });
-                                    }
-                                }}
-                                disabled={!isDirectionChosen}
-                            />
-                        </label>
-                    </div>
-                    {state.slError && <span className="error-text">{state.slError}</span>}
 
                     <div title={!isDirectionChosen ? tooltipText : ''}>
                         <label>Take Profit (USDT):
@@ -337,18 +329,40 @@ const Calculator = () => {
 
                 <fieldset className="form-section">
                     <legend>🛡️ Риск-менеджмент</legend>
-                    <label>Депозит (USDT):
-                        <input
-                            type="number"
-                            step="0.01"
-                            value={deposit}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setDeposit(value);
-                                localStorage.setItem('lastDeposit', value);
-                            }}
-                        />
-                    </label>
+                    <div title={!isDirectionChosen ? tooltipText : ''}>
+                        <label>Stop Loss (USDT):
+                            <input
+                                type="number"
+                                step="0.0001"
+                                value={state.slPrice}
+                                className={state.slError ? 'input-error' : ''}
+                                onChange={e => {
+                                    const value = e.target.value;
+                                    dispatch({ type: 'SET_FIELD', field: 'slPrice', value: e.target.value });
+
+                                    const SL = parseFloat(value);
+                                    const EP = parseFloat(state.entryPrice);
+
+                                    if (!value || isNaN(SL) || isNaN(EP)) {
+                                        dispatch({ type: 'SET_FIELD', field: 'state.slError', value: e.target.value });
+                                        return;
+                                    }
+
+                                    if (SL === EP) {
+                                        dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL не должен совпадать с ценой входа' });
+                                    } else if (state.direction === 'buy' && SL > EP) {
+                                        dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть ниже цены входа при покупке' });
+                                    } else if (state.direction === 'sell' && SL < EP) {
+                                        dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть выше цены входа при продаже' });
+                                    } else {
+                                        dispatch({ type: 'SET_FIELD', field: 'slError', value: '' });
+                                    }
+                                }}
+                                disabled={!isDirectionChosen}
+                            />
+                        </label>
+                    </div>
+                    {state.slError && <span className="error-text">{state.slError}</span>}
 
                     <label>Риск на сделку (%):
                         <input

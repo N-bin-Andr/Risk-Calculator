@@ -85,6 +85,27 @@ form {
 
 
 /* Метки и поля */
+.inline-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.inline-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.inline-checkbox label {
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+}
+
+
+
 label {
     font-weight: 600;
     color: #444;
