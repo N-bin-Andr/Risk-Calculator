@@ -104,6 +104,29 @@ form {
     cursor: pointer;
 }
 
+.inline-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+
+}
+
+.inline-field label {
+    width: 160px;
+    /* 20 символов ≈ 160px */
+    font-size: 14px;
+    color: #333;
+    flex-wrap: nowrap;
+}
+
+.inline-field input,
+.inline-field select {
+    width: 120px;
+    /* 15 символов ≈ 120px */
+    padding: 4px 8px;
+    font-size: 14px;
+}
 
 
 label {
