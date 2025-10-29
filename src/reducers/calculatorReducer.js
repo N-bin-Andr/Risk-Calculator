@@ -27,14 +27,14 @@ export function calculatorReducer(state, action) {
             };
         case 'RESET_FORM':
             return initialState;
-        default:
-            return state;
         case 'RESET_FIELDS_EXCEPT':
             const resetState = {};
             Object.keys(state).forEach(key => {
                 resetState[key] = action.fieldsToKeep.includes(key) ? state[key] : '';
             });
             return resetState;
+        default:
+            return state;
     }
 }
 

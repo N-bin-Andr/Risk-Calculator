@@ -123,19 +123,32 @@ form {
 
 .inline-field {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    /* важно для выравнивания textarea по верхнему краю */
     gap: 12px;
     margin-bottom: 8px;
-
+    flex-wrap: nowrap;
 }
 
 .inline-field label {
     width: 160px;
-    /* 20 символов ≈ 160px */
+    min-width: 160px;
     font-size: 14px;
     color: #333;
-    flex-wrap: nowrap;
+    white-space: nowrap;
 }
+
+.inline-field textarea {
+    width: 160px;
+    /* увеличено до ширины input */
+    min-width: 160px;
+    height: 60px;
+    resize: vertical;
+    font-size: 14px;
+    padding: 4px 8px;
+    box-sizing: border-box;
+}
+
 
 .inline-field input,
 .inline-field select {
@@ -146,7 +159,6 @@ form {
     font-size: 14px;
     box-sizing: border-box;
 }
-
 
 label {
     font-weight: 600;
@@ -183,6 +195,15 @@ textarea {
     font-size: 16px;
     padding: 0 8px;
     color: #333;
+}
+
+.trader-note {
+    width: 99%;
+    height: 60px;
+    resize: vertical;
+    font-size: 14px;
+    padding: 4px 8px;
+    box-sizing: border-box;
 }
 
 

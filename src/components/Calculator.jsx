@@ -8,6 +8,7 @@ import { useReducer, useEffect } from 'react';
 import { calculatorReducer, initialState } from '../reducers/calculatorReducer';
 import { validateFields } from '../utils/validateCalculator';
 
+
 const Calculator = () => {
     let savedState;
     try {
@@ -21,11 +22,21 @@ const Calculator = () => {
         calculatorReducer,
         { ...initialState, ...(savedState || {}) }
     );
+
+    const {
+        getSuggestions,
+        addInstrument,
+        history,
+        deleteInstrument,
+        exportHistoryAsJSON
+    } = useInstrumentHistory();
+
     useEffect(() => {
         const EP = parseFloat(state.entryPrice);
         const SL = parseFloat(state.slPrice);
         const TP = parseFloat(state.takeProfitPrice);
         const direction = state.direction;
+
         const suggestions = getSuggestions(state.instrument);
         setInstrumentSuggestions(suggestions);
 
@@ -58,7 +69,8 @@ const Calculator = () => {
         } else {
             dispatch({ type: 'SET_FIELD', field: 'tpError', value: '' });
         }
-    }, [state.entryPrice, state.slPrice, state.takeProfitPrice, state.direction]);
+    }, [state.entryPrice, state.slPrice, state.takeProfitPrice, state.direction, state.instrument,
+        getSuggestions]);
 
     useEffect(() => {
         const savedDeposit = localStorage.getItem('savedDeposit');
@@ -78,17 +90,13 @@ const Calculator = () => {
         localStorage.setItem('savedRiskSize', state.riskSize);
     }, [state.riskSize]);
 
-
-
-
     const isDirectionChosen = state.direction === 'buy' || state.direction === 'sell';
     const tooltipText = 'Сначала выберите направление сделки';
     const [deposit, setDeposit] = useState(() => { return localStorage.getItem('lastDeposit') || ''; });
     const [riskSize, setRiskSize] = useState(() => { return localStorage.getItem('lastRiskSize') || ''; });
     const [status, setStatus] = useState(() => { return localStorage.getItem('lastStatus') || 'Запланирован'; });
-
-    const { addInstrument, getSuggestions, deleteInstrument, history, exportHistoryAsJSON } = useInstrumentHistory();
     const [instrumentSuggestions, setInstrumentSuggestions] = useState([]);
+
     const reportRef = useRef();
     const [showReport, setShowReport] = useState(false);
 
@@ -181,7 +189,7 @@ const Calculator = () => {
                             dispatch({ type: 'SET_FIELD', field: 'isBacktest', value: e.target.checked })
                         }
                     />
-                    <label htmlFor="isBacktest">Это бэктест</label>
+                    <label htmlFor="isBacktest">Это Backtest</label>
                 </div>
 
 
@@ -198,6 +206,7 @@ const Calculator = () => {
                         <option value="buy">Покупка</option>
                         <option value="sell">Продажа</option>
                     </select>
+
                     <label>Инструмент:
                         <input
                             type="text"
@@ -209,11 +218,7 @@ const Calculator = () => {
                             autoComplete="off"
                         />
                     </label>
-                    <datalist id="instrument-options">
-                        {instrumentSuggestions.map((item, index) => (
-                            <option key={index} value={item} />
-                        ))}
-                    </datalist>
+
                     <datalist id="instrument-options">
                         {instrumentSuggestions.map((item, index) => (
                             <option key={index} value={item} />
@@ -364,19 +369,15 @@ const Calculator = () => {
                 {/* Блок 4: Комментарий */}
                 <fieldset className="form-section">
                     <legend>📝 Комментарий трейдера</legend>
-                    <div title={!isDirectionChosen ? tooltipText : ''}>
-                        <label>Комментарий трейдера:
-                            <textarea
-                                value={state.traderNote}
-                                onChange={e =>
-                                    dispatch({ type: 'SET_FIELD', field: 'traderNote', value: e.target.value })
-                                }
-                                disabled={!isDirectionChosen}
-                                rows={4}
-                                style={{ width: '100%', resize: 'vertical' }}
-                            />
-                        </label>
-                    </div>
+                    <textarea
+                        value={state.traderNote}
+                        onChange={e =>
+                            dispatch({ type: 'SET_FIELD', field: 'traderNote', value: e.target.value })
+                        }
+                        className="trader-note"
+                        rows={4}
+                        disabled={!isDirectionChosen}
+                    />
                 </fieldset>
 
 

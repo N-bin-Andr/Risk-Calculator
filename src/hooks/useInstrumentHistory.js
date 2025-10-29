@@ -39,11 +39,13 @@ export function useInstrumentHistory() {
 
     const getSuggestions = input => {
         if (!input) return [];
-        return history
+        const saved = JSON.parse(localStorage.getItem('instrumentHistory') || '[]');
+        return saved
             .filter(item => item.name.toLowerCase().includes(input.toLowerCase()))
             .sort((a, b) => b.count - a.count)
             .map(item => item.name);
     };
+
 
     const deleteInstrument = name => {
         const updated = history.filter(item => item.name !== name);
