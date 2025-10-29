@@ -236,10 +236,17 @@ textarea {
     gap: 8px;
 }
 
+.instrument-history-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 12px;
+}
 
-
-
-
+.instrument-history-actions button {
+    font-size: 0.9em;
+    padding: 6px 12px;
+}
 
 
 

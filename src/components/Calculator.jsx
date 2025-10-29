@@ -41,6 +41,12 @@ const Calculator = () => {
         );
     };
 
+    const handleDeleteSelected = () => {
+        selectedInstruments.forEach(name => deleteInstrument(name));
+        setSelectedInstruments([]);
+    };
+
+
     useEffect(() => {
         const EP = parseFloat(state.entryPrice);
         const SL = parseFloat(state.slPrice);
@@ -409,9 +415,15 @@ const Calculator = () => {
                                     ))}
                                 </ul>
                             )}
-                            <button onClick={exportHistoryAsJSON}>📤 Экспорт в JSON</button>
+
                         </fieldset>
 
+                        <div className="button-group">
+                            <div className="instrument-history-actions">
+                                <button onClick={handleDeleteSelected}>🗑️ Удалить</button>
+                                <button onClick={exportHistoryAsJSON}>📤 в JSON</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
