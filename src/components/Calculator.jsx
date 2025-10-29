@@ -31,6 +31,16 @@ const Calculator = () => {
         exportHistoryAsJSON
     } = useInstrumentHistory();
 
+    const [selectedInstruments, setSelectedInstruments] = useState([]);
+
+    const toggleInstrumentSelection = name => {
+        setSelectedInstruments(prev =>
+            prev.includes(name)
+                ? prev.filter(item => item !== name)
+                : [...prev, name]
+        );
+    };
+
     useEffect(() => {
         const EP = parseFloat(state.entryPrice);
         const SL = parseFloat(state.slPrice);
@@ -386,9 +396,15 @@ const Calculator = () => {
                                 <ul className="instrument-history-list">
                                     {history.map(({ name, count }) => (
                                         <li key={name}>
-                                            <span>{name}</span>
-                                            <span style={{ opacity: 0.6 }}>({count})</span>
-                                            <button onClick={() => deleteInstrument(name)}>Удалить</button>
+                                            <label className="instrument-checkbox">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedInstruments.includes(name)}
+                                                    onChange={() => toggleInstrumentSelection(name)}
+                                                />
+                                                <span>{name}</span>
+                                                <span style={{ opacity: 0.6 }}>({count})</span>
+                                            </label>
                                         </li>
                                     ))}
                                 </ul>
