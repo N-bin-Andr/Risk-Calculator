@@ -192,194 +192,212 @@ const Calculator = () => {
                     <label htmlFor="isBacktest">Это Backtest</label>
                 </div>
 
-
-                {/* Блок 1: Направление и инструмент */}
-                <fieldset className="form-section">
-                    <legend>💰 Параметры позиции:</legend>
-                    <select
-                        value={state.direction}
-                        onChange={e =>
-                            dispatch({ type: 'SET_FIELD', field: 'direction', value: e.target.value })
-                        }
-                    >
-                        <option value="">Выберите направление</option>
-                        <option value="buy">Покупка</option>
-                        <option value="sell">Продажа</option>
-                    </select>
-
-                    <label>Инструмент:
-                        <input
-                            type="text"
-                            value={state.instrument}
-                            onChange={e =>
-                                dispatch({ type: 'SET_FIELD', field: 'instrument', value: e.target.value })
-                            }
-                            list="instrument-options"
-                            autoComplete="off"
-                        />
-                    </label>
-
-                    <datalist id="instrument-options">
-                        {instrumentSuggestions.map((item, index) => (
-                            <option key={index} value={item} />
-                        ))}
-                    </datalist>
-                </fieldset>
-
-
-                {/* Блок 2: Цены и статус */}
-                <fieldset className="form-section">
-                    <legend>📈 Параметры позиции</legend>
-                    <div className="inline-field">
-                        <label>Депозит (USDT):</label>
-                        <input
-                            type="number"
-                            step="0.01"
-                            value={deposit}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setDeposit(value);
-                                localStorage.setItem('lastDeposit', value);
-                                dispatch({ type: 'SET_FIELD', field: 'deposit', value: e.target.value })
-                            }}
-                        />
-                    </div>
-
-                    <div title={!isDirectionChosen ? tooltipText : ''} className="inline-field">
-                        <label>Цена входа:</label>
-                        <input
-                            type="number"
-                            value={state.entryPrice}
-                            onChange={e =>
-                                dispatch({ type: 'SET_FIELD', field: 'entryPrice', value: e.target.value })
-                            }
-                            disabled={!isDirectionChosen}
-                        />
-
-                    </div>
-                    {isNaN(state.entryPrice) && <span className="error-text">Введите число</span>}
-
-                    <div title={!isDirectionChosen ? tooltipText : ''} className="inline-field">
-                        <label>Take Profit (USDT):</label>
-                        <input
-                            type="number"
-                            step="0.0001"
-                            value={state.takeProfitPrice}
-                            className={state.tpError ? 'input-error' : ''}
-                            onChange={e => {
-                                const value = e.target.value;
-                                dispatch({ type: 'SET_FIELD', field: 'takeProfitPrice', value: e.target.value });
-
-                                const TP = parseFloat(value);
-                                const EP = parseFloat(state.entryPrice);
-
-                                if (!value || isNaN(TP) || isNaN(EP)) {
-                                    dispatch({ type: 'SET_FIELD', field: 'tpError', value: e.target.value });
-                                    return;
+                <div className="layout-columns">
+                    <div className="left-column">
+                        {/* Блок 1: Направление и инструмент */}
+                        <fieldset className="form-section">
+                            <legend>📈 Параметры позиции</legend>
+                            <select
+                                value={state.direction}
+                                onChange={e =>
+                                    dispatch({ type: 'SET_FIELD', field: 'direction', value: e.target.value })
                                 }
+                            >
+                                <option value="">Выберите направление</option>
+                                <option value="buy">Покупка</option>
+                                <option value="sell">Продажа</option>
+                            </select>
+                            <div className="inline-field">
+                                <label>Инструмент:</label>
+                                <input
+                                    type="text"
+                                    value={state.instrument}
+                                    onChange={e =>
+                                        dispatch({ type: 'SET_FIELD', field: 'instrument', value: e.target.value })
+                                    }
+                                    list="instrument-options"
+                                    autoComplete="off"
+                                />
+                            </div>
 
-                                if (!state.direction) {
-                                    dispatch({ type: 'SET_FIELD', field: 'tpError', value: '' });
-                                    return;
+                            <datalist id="instrument-options">
+                                {instrumentSuggestions.map((item, index) => (
+                                    <option key={index} value={item} />
+                                ))}
+                            </datalist>
+                            <div className="inline-field">
+                                <label>Депозит (USDT):</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={deposit}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setDeposit(value);
+                                        localStorage.setItem('lastDeposit', value);
+                                        dispatch({ type: 'SET_FIELD', field: 'deposit', value: e.target.value })
+                                    }}
+                                />
+                            </div>
+
+                            <div title={!isDirectionChosen ? tooltipText : ''} className="inline-field">
+                                <label>Цена входа:</label>
+                                <input
+                                    type="number"
+                                    value={state.entryPrice}
+                                    onChange={e =>
+                                        dispatch({ type: 'SET_FIELD', field: 'entryPrice', value: e.target.value })
+                                    }
+                                    disabled={!isDirectionChosen}
+                                />
+
+                            </div>
+                            {isNaN(state.entryPrice) && <span className="error-text">Введите число</span>}
+
+                            <div title={!isDirectionChosen ? tooltipText : ''} className="inline-field">
+                                <label>Take Profit (USDT):</label>
+                                <input
+                                    type="number"
+                                    step="0.0001"
+                                    value={state.takeProfitPrice}
+                                    className={state.tpError ? 'input-error' : ''}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        dispatch({ type: 'SET_FIELD', field: 'takeProfitPrice', value: e.target.value });
+
+                                        const TP = parseFloat(value);
+                                        const EP = parseFloat(state.entryPrice);
+
+                                        if (!value || isNaN(TP) || isNaN(EP)) {
+                                            dispatch({ type: 'SET_FIELD', field: 'tpError', value: e.target.value });
+                                            return;
+                                        }
+
+                                        if (!state.direction) {
+                                            dispatch({ type: 'SET_FIELD', field: 'tpError', value: '' });
+                                            return;
+                                        }
+                                        if (TP === EP) {
+                                            dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP не должен совпадать с ценой входа' });
+                                        } else if (state.direction === 'buy' && TP < EP) {
+                                            dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP должен быть выше цены входа при покупке' });
+                                        } else if (state.direction === 'sell' && TP > EP) {
+                                            dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP должен быть ниже цены входа при продаже' });
+                                        } else {
+                                            dispatch({ type: 'SET_FIELD', field: 'tpError', value: '' });
+                                        }
+                                    }}
+                                    disabled={!isDirectionChosen}
+                                />
+                            </div>
+                            {state.tpError && <span className="error-text">{state.tpError}</span>}
+
+                            <div title={!isDirectionChosen ? tooltipText : ''} className="inline-field">
+                                <label>Статус сделки: </label>
+                                <select
+                                    value={status}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setStatus(value);
+                                        localStorage.setItem('lastStatus', value);
+                                    }}
+                                    disabled={!isDirectionChosen}
+                                >
+                                    <option value="Открыт">Открыт</option>
+                                    <option value="Запланирован">Запланирован</option>
+                                    <option value="Отменён">Отменён</option>
+                                </select>
+                            </div>
+                        </fieldset>
+
+                        <fieldset className="form-section">
+                            <legend>🛡️ Риск-менеджмент</legend>
+                            <div title={!isDirectionChosen ? tooltipText : ''} className="inline-field">
+                                <label>Stop Loss (USDT):</label>
+                                <input
+                                    type="number"
+                                    step="0.0001"
+                                    value={state.slPrice}
+                                    className={state.slError ? 'input-error' : ''}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        dispatch({ type: 'SET_FIELD', field: 'slPrice', value: e.target.value });
+
+                                        const SL = parseFloat(value);
+                                        const EP = parseFloat(state.entryPrice);
+
+                                        if (!value || isNaN(SL) || isNaN(EP)) {
+                                            dispatch({ type: 'SET_FIELD', field: 'state.slError', value: e.target.value });
+                                            return;
+                                        }
+
+                                        if (SL === EP) {
+                                            dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL не должен совпадать с ценой входа' });
+                                        } else if (state.direction === 'buy' && SL > EP) {
+                                            dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть ниже цены входа при покупке' });
+                                        } else if (state.direction === 'sell' && SL < EP) {
+                                            dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть выше цены входа при продаже' });
+                                        } else {
+                                            dispatch({ type: 'SET_FIELD', field: 'slError', value: '' });
+                                        }
+                                    }}
+                                    disabled={!isDirectionChosen}
+                                />
+                            </div>
+                            {state.slError && <span className="error-text">{state.slError}</span>}
+
+                            <div className="inline-field">
+                                <label>Риск на сделку (%):</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={riskSize}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setRiskSize(value);
+                                        localStorage.setItem('lastRiskSize', value);
+                                    }}
+                                />
+                            </div>
+                        </fieldset>
+
+                        {/* Блок 4: Комментарий */}
+                        <fieldset className="form-section">
+                            <legend>📝 Комментарий трейдера</legend>
+                            <textarea
+                                value={state.traderNote}
+                                onChange={e =>
+                                    dispatch({ type: 'SET_FIELD', field: 'traderNote', value: e.target.value })
                                 }
-                                if (TP === EP) {
-                                    dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP не должен совпадать с ценой входа' });
-                                } else if (state.direction === 'buy' && TP < EP) {
-                                    dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP должен быть выше цены входа при покупке' });
-                                } else if (state.direction === 'sell' && TP > EP) {
-                                    dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP должен быть ниже цены входа при продаже' });
-                                } else {
-                                    dispatch({ type: 'SET_FIELD', field: 'tpError', value: '' });
-                                }
-                            }}
-                            disabled={!isDirectionChosen}
-                        />
+                                className="trader-note"
+                                rows={4}
+                                disabled={!isDirectionChosen}
+                            />
+                        </fieldset>
+
+
                     </div>
-                    {state.tpError && <span className="error-text">{state.tpError}</span>}
+                    <div className="instrument-history">
+                        <fieldset className="form-section">
+                            <legend>📚 История инструментов:</legend>
+                            {history.length === 0 ? (
+                                <p style={{ opacity: 0.6 }}>История пуста</p>
+                            ) : (
+                                <ul className="instrument-history-list">
+                                    {history.map(({ name, count }) => (
+                                        <li key={name}>
+                                            <span>{name}</span>
+                                            <span style={{ opacity: 0.6 }}>({count})</span>
+                                            <button onClick={() => deleteInstrument(name)}>Удалить</button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            <button onClick={exportHistoryAsJSON}>📤 Экспорт в JSON</button>
+                        </fieldset>
 
-                    <div title={!isDirectionChosen ? tooltipText : ''} className="inline-field">
-                        <label>Статус сделки: </label>
-                        <select
-                            value={status}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setStatus(value);
-                                localStorage.setItem('lastStatus', value);
-                            }}
-                            disabled={!isDirectionChosen}
-                        >
-                            <option value="Открыт">Открыт</option>
-                            <option value="Запланирован">Запланирован</option>
-                            <option value="Отменён">Отменён</option>
-                        </select>
                     </div>
-                </fieldset>
-
-                <fieldset className="form-section">
-                    <legend>🛡️ Риск-менеджмент</legend>
-                    <div title={!isDirectionChosen ? tooltipText : ''} className="inline-field">
-                        <label>Stop Loss (USDT):</label>
-                        <input
-                            type="number"
-                            step="0.0001"
-                            value={state.slPrice}
-                            className={state.slError ? 'input-error' : ''}
-                            onChange={e => {
-                                const value = e.target.value;
-                                dispatch({ type: 'SET_FIELD', field: 'slPrice', value: e.target.value });
-
-                                const SL = parseFloat(value);
-                                const EP = parseFloat(state.entryPrice);
-
-                                if (!value || isNaN(SL) || isNaN(EP)) {
-                                    dispatch({ type: 'SET_FIELD', field: 'state.slError', value: e.target.value });
-                                    return;
-                                }
-
-                                if (SL === EP) {
-                                    dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL не должен совпадать с ценой входа' });
-                                } else if (state.direction === 'buy' && SL > EP) {
-                                    dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть ниже цены входа при покупке' });
-                                } else if (state.direction === 'sell' && SL < EP) {
-                                    dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть выше цены входа при продаже' });
-                                } else {
-                                    dispatch({ type: 'SET_FIELD', field: 'slError', value: '' });
-                                }
-                            }}
-                            disabled={!isDirectionChosen}
-                        />
-                    </div>
-                    {state.slError && <span className="error-text">{state.slError}</span>}
-
-                    <div className="inline-field">
-                        <label>Риск на сделку (%):</label>
-                        <input
-                            type="number"
-                            step="0.01"
-                            value={riskSize}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setRiskSize(value);
-                                localStorage.setItem('lastRiskSize', value);
-                            }}
-                        />
-                    </div>
-                </fieldset>
-
-                {/* Блок 4: Комментарий */}
-                <fieldset className="form-section">
-                    <legend>📝 Комментарий трейдера</legend>
-                    <textarea
-                        value={state.traderNote}
-                        onChange={e =>
-                            dispatch({ type: 'SET_FIELD', field: 'traderNote', value: e.target.value })
-                        }
-                        className="trader-note"
-                        rows={4}
-                        disabled={!isDirectionChosen}
-                    />
-                </fieldset>
-
+                </div>
 
                 <fieldset className="report-section">
                     <legend>📊 Результаты расчёта</legend>
@@ -425,23 +443,6 @@ const Calculator = () => {
                     </ul>
                 </div>
             )}
-
-            <div className="state.instrument-history">
-                <h4>История инструментов:</h4>
-                <ul>
-                    {history.map(({ name, count }) => (
-                        <li key={name}>
-                            {name} <span style={{ opacity: 0.6 }}>({count})</span>
-                            <button onClick={() => deleteInstrument(name)}>Удалить</button>
-                        </li>
-                    ))}
-                </ul>
-                <button onClick={exportHistoryAsJSON}>📤 Экспорт в JSON</button>
-            </div>
-
-
-
-
 
 
 
