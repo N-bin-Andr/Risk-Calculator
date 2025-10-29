@@ -250,6 +250,22 @@ textarea {
 
 
 
+.select-all-row {
+    display: flex;
+    justify-content: left;
+    margin-bottom: 12px;
+}
+
+.select-all-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+
+
+
 .report-section {
     border: 1px solid #ccc;
     padding: 16px;

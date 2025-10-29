@@ -40,11 +40,20 @@ const Calculator = () => {
                 : [...prev, name]
         );
     };
+    const toggleSelectAll = () => {
+        if (selectedInstruments.length === history.length) {
+            setSelectedInstruments([]);
+        } else {
+            setSelectedInstruments(history.map(item => item.name));
+        }
+    };
+
 
     const handleDeleteSelected = () => {
         selectedInstruments.forEach(name => deleteInstrument(name));
         setSelectedInstruments([]);
     };
+
 
 
     useEffect(() => {
@@ -393,12 +402,14 @@ const Calculator = () => {
 
 
                     </div>
+
                     <div className="instrument-history">
                         <fieldset className="form-section">
                             <legend>📚 История инструментов:</legend>
                             {history.length === 0 ? (
                                 <p style={{ opacity: 0.6 }}>История пуста</p>
                             ) : (
+
                                 <ul className="instrument-history-list">
                                     {history.map(({ name, count }) => (
                                         <li key={name}>
@@ -416,9 +427,21 @@ const Calculator = () => {
                                         </li>
                                     ))}
                                 </ul>
+
                             )}
 
+
                         </fieldset>
+
+                        <div className="select-all-row">
+                            <label className="select-all-checkbox"></label>
+                            <input
+                                type="checkbox"
+                                checked={selectedInstruments.length === history.length && history.length > 0}
+                                onChange={toggleSelectAll}
+                            />
+                            <span>Выделить всё</span>
+                        </div>
 
                         <div className="button-group">
                             <div className="instrument-history-actions">
