@@ -402,7 +402,8 @@ const Calculator = () => {
                                 <ul className="instrument-history-list">
                                     {history.map(({ name, count }) => (
                                         <li key={name}>
-                                            <label className="instrument-checkbox">
+
+                                            <div className="inline-checkbox">
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedInstruments.includes(name)}
@@ -410,7 +411,8 @@ const Calculator = () => {
                                                 />
                                                 <span>{name}</span>
                                                 <span style={{ opacity: 0.6 }}>({count})</span>
-                                            </label>
+                                                <label className="instrument-checkbox"></label>
+                                            </div>
                                         </li>
                                     ))}
                                 </ul>
