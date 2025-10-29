@@ -386,21 +386,6 @@ const Calculator = () => {
                             </div>
                         </fieldset>
 
-                        {/* Блок 4: Комментарий */}
-                        <fieldset className="form-section">
-                            <legend>📝 Комментарий трейдера</legend>
-                            <textarea
-                                value={state.traderNote}
-                                onChange={e =>
-                                    dispatch({ type: 'SET_FIELD', field: 'traderNote', value: e.target.value })
-                                }
-                                className="trader-note"
-                                rows={4}
-                                disabled={!isDirectionChosen}
-                            />
-                        </fieldset>
-
-
                     </div>
 
                     <div className="instrument-history">
@@ -429,8 +414,6 @@ const Calculator = () => {
                                 </ul>
 
                             )}
-
-
                         </fieldset>
 
                         <div className="select-all-row">
@@ -451,6 +434,20 @@ const Calculator = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Блок 4: Комментарий */}
+                <fieldset className="form-section">
+                    <legend>📝 Комментарий трейдера</legend>
+                    <textarea
+                        value={state.traderNote}
+                        onChange={e =>
+                            dispatch({ type: 'SET_FIELD', field: 'traderNote', value: e.target.value })
+                        }
+                        className="trader-note"
+                        rows={4}
+                        disabled={!isDirectionChosen}
+                    />
+                </fieldset>
 
                 <fieldset className="report-section">
                     <legend>📊 Результаты расчёта</legend>
