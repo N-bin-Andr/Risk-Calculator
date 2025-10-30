@@ -7,6 +7,7 @@ export const initialState = {
     entryPrice: '',
     slPrice: '',
     takeProfitPrice: '',
+    tpLevels: [{ price: '', percent: 100 }],
     traderNote: '',
     reportId: '',
     date: '',
@@ -33,6 +34,25 @@ export function calculatorReducer(state, action) {
                 resetState[key] = action.fieldsToKeep.includes(key) ? state[key] : '';
             });
             return resetState;
+        case 'ADD_TP_LEVEL':
+            return {
+                ...state,
+                tpLevels: [...state.tpLevels, { price: '', percent: 0 }]
+            };
+
+        case 'REMOVE_TP_LEVEL':
+            return {
+                ...state,
+                tpLevels: state.tpLevels.filter((_, i) => i !== action.index)
+            };
+
+        case 'UPDATE_TP_LEVEL':
+            return {
+                ...state,
+                tpLevels: state.tpLevels.map((tp, i) =>
+                    i === action.index ? { ...tp, [action.field]: action.value } : tp
+                )
+            };
         default:
             return state;
     }

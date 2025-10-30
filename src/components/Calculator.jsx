@@ -48,13 +48,10 @@ const Calculator = () => {
         }
     };
 
-
     const handleDeleteSelected = () => {
         selectedInstruments.forEach(name => deleteInstrument(name));
         setSelectedInstruments([]);
     };
-
-
 
     useEffect(() => {
         const EP = parseFloat(state.entryPrice);
@@ -80,20 +77,41 @@ const Calculator = () => {
             dispatch({ type: 'SET_FIELD', field: 'slError', value: '' });
         }
 
-        // TP проверка
-        if (!isNaN(TP) && !isNaN(EP) && direction) {
-            if (TP === EP) {
-                dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP не должен совпадать с ценой входа' });
-            } else if (direction === 'buy' && TP < EP) {
-                dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP должен быть выше цены входа при покупке' });
-            } else if (direction === 'sell' && TP > EP) {
-                dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP должен быть ниже цены входа при продаже' });
-            } else {
-                dispatch({ type: 'SET_FIELD', field: 'tpError', value: '' });
+        // TP проверка (множественные уровни)
+        const tpErrors = [];
+
+        state.tpLevels.forEach((tp, i) => {
+            const price = parseFloat(tp.price);
+            const percent = parseFloat(tp.percent);
+
+            if (isNaN(price)) {
+                tpErrors.push(`TP ${i + 1}: цена не указана`);
+            } else if (price === EP) {
+                tpErrors.push(`TP ${i + 1}: не должен совпадать с ценой входа`);
+            } else if (direction === 'buy' && price < EP) {
+                tpErrors.push(`TP ${i + 1}: должен быть выше цены входа при покупке`);
+            } else if (direction === 'sell' && price > EP) {
+                tpErrors.push(`TP ${i + 1}: должен быть ниже цены входа при продаже`);
             }
-        } else {
-            dispatch({ type: 'SET_FIELD', field: 'tpError', value: '' });
+
+            if (isNaN(percent) || percent <= 0) {
+                tpErrors.push(`TP ${i + 1}: процент должен быть > 0`);
+            }
+        });
+
+        const totalPercent = state.tpLevels.reduce(
+            (acc, tp) => acc + parseFloat(tp.percent || 0),
+            0
+        );
+        if (totalPercent > 100) {
+            tpErrors.push(`Сумма процентов TP превышает 100%`);
         }
+
+        dispatch({
+            type: 'SET_FIELD',
+            field: 'tpError',
+            value: tpErrors.join('\n')
+        });
     }, [state.entryPrice, state.slPrice, state.takeProfitPrice, state.direction, state.instrument,
         getSuggestions]);
 
@@ -279,43 +297,66 @@ const Calculator = () => {
                             </div>
                             {isNaN(state.entryPrice) && <span className="error-text">Введите число</span>}
 
-                            <div title={!isDirectionChosen ? tooltipText : ''} className="inline-field">
-                                <label>Take Profit (USDT):</label>
-                                <input
-                                    type="number"
-                                    step="0.0001"
-                                    value={state.takeProfitPrice}
-                                    className={state.tpError ? 'input-error' : ''}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        dispatch({ type: 'SET_FIELD', field: 'takeProfitPrice', value: e.target.value });
-
-                                        const TP = parseFloat(value);
-                                        const EP = parseFloat(state.entryPrice);
-
-                                        if (!value || isNaN(TP) || isNaN(EP)) {
-                                            dispatch({ type: 'SET_FIELD', field: 'tpError', value: e.target.value });
-                                            return;
-                                        }
-
-                                        if (!state.direction) {
-                                            dispatch({ type: 'SET_FIELD', field: 'tpError', value: '' });
-                                            return;
-                                        }
-                                        if (TP === EP) {
-                                            dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP не должен совпадать с ценой входа' });
-                                        } else if (state.direction === 'buy' && TP < EP) {
-                                            dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP должен быть выше цены входа при покупке' });
-                                        } else if (state.direction === 'sell' && TP > EP) {
-                                            dispatch({ type: 'SET_FIELD', field: 'tpError', value: 'TP должен быть ниже цены входа при продаже' });
-                                        } else {
-                                            dispatch({ type: 'SET_FIELD', field: 'tpError', value: '' });
-                                        }
-                                    }}
+                            <fieldset className="form-section">
+                                <legend>🎯 Уровни Take Profit</legend>
+                                {state.tpLevels.map((tp, index) => (
+                                    <div
+                                        key={index}
+                                        title={!isDirectionChosen ? tooltipText : ''}
+                                        className="inline-field"
+                                    >
+                                        <label>TP {index + 1}:</label>
+                                        <input
+                                            type="number"
+                                            step="0.0001"
+                                            value={tp.price}
+                                            className={state.tpError ? 'input-error' : ''}
+                                            onChange={e =>
+                                                dispatch({
+                                                    type: 'UPDATE_TP_LEVEL',
+                                                    index,
+                                                    field: 'price',
+                                                    value: e.target.value
+                                                })
+                                            }
+                                            placeholder="Цена"
+                                            disabled={!isDirectionChosen}
+                                        />
+                                        <input
+                                            type="number"
+                                            step="1"
+                                            value={tp.percent}
+                                            className={state.tpError ? 'input-error' : ''}
+                                            onChange={e =>
+                                                dispatch({
+                                                    type: 'UPDATE_TP_LEVEL',
+                                                    index,
+                                                    field: 'percent',
+                                                    value: e.target.value
+                                                })
+                                            }
+                                            placeholder="% объёма"
+                                            disabled={!isDirectionChosen}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => dispatch({ type: 'REMOVE_TP_LEVEL', index })}
+                                            disabled={state.tpLevels.length === 1}
+                                        >
+                                            🗑️
+                                        </button>
+                                    </div>
+                                ))}
+                                <button
+                                    type="button"
+                                    onClick={() => dispatch({ type: 'ADD_TP_LEVEL' })}
                                     disabled={!isDirectionChosen}
-                                />
-                            </div>
-                            {state.tpError && <span className="error-text">{state.tpError}</span>}
+                                >
+                                    ➕ Добавить TP
+                                </button>
+                                {state.tpError && <span className="error-text">{state.tpError}</span>}
+                            </fieldset>
+
 
                             <div title={!isDirectionChosen ? tooltipText : ''} className="inline-field">
                                 <label>Статус сделки: </label>

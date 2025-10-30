@@ -10,7 +10,8 @@ export function calculateReport({
     instrument,
     traderNote,
     status,
-    isBacktest
+    isBacktest,
+    tpLevels = []
 }) {
     const D = parseFloat(deposit);
     const R = parseFloat(riskSize);
@@ -41,6 +42,22 @@ export function calculateReport({
     if (SP === 0) throw new Error('SL не может совпадать с ценой входа');
     const VC = +(RV / Math.abs(EP - SL)).toFixed(2);
     const VV = +(VC * EP).toFixed(2);
+    let totalProfit = 0;
+
+    tpLevels.forEach(tp => {
+        const tpPrice = parseFloat(tp.price);
+        const tpPercent = parseFloat(tp.percent);
+
+        if (isNaN(tpPrice) || isNaN(tpPercent)) return;
+
+        const volume = VC * (tpPercent / 100);
+        const profitPerUnit = direction === 'buy' ? tpPrice - EP : EP - tpPrice;
+
+        totalProfit += profitPerUnit * volume;
+    });
+
+    totalProfit = +totalProfit.toFixed(2);
+
     const RR = TP ? +((Math.abs(TP - EP) / Math.abs(EP - SL)).toFixed(2)) : null;
     const date = new Date().toISOString().split('T')[0];
 
@@ -60,7 +77,8 @@ export function calculateReport({
         rrRatio: RR,
         takeProfitPrice: TP,
         traderNote,
-        status
+        status,
+        totalProfit,
     };
 
     return reportData;
