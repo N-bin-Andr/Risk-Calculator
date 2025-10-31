@@ -28,12 +28,25 @@ export function calculatorReducer(state, action) {
             };
         case 'RESET_FORM':
             return initialState;
+
         case 'RESET_FIELDS_EXCEPT':
             const resetState = {};
             Object.keys(state).forEach(key => {
-                resetState[key] = action.fieldsToKeep.includes(key) ? state[key] : '';
+                if (action.fieldsToKeep.includes(key)) {
+                    resetState[key] = state[key];
+                } else {
+                    const initial = initialState[key];
+                    resetState[key] =
+                        Array.isArray(initial) ? [] :
+                            typeof initial === 'number' ? 0 :
+                                typeof initial === 'boolean' ? false :
+                                    typeof initial === 'object' ? {} :
+                                        '';
+                }
             });
             return resetState;
+
+
         case 'ADD_TP_LEVEL':
             return {
                 ...state,

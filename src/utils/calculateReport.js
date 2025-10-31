@@ -42,8 +42,8 @@ export function calculateReport({
     if (SP === 0) throw new Error('SL не может совпадать с ценой входа');
     const VC = +(RV / Math.abs(EP - SL)).toFixed(2);
     const VV = +(VC * EP).toFixed(2);
-    let totalProfit = 0;
 
+    let totalProfit = 0;
     tpLevels.forEach(tp => {
         const tpPrice = parseFloat(tp.price);
         const tpPercent = parseFloat(tp.percent);
@@ -58,7 +58,30 @@ export function calculateReport({
 
     totalProfit = +totalProfit.toFixed(2);
 
-    const RR = TP ? +((Math.abs(TP - EP) / Math.abs(EP - SL)).toFixed(2)) : null;
+    const tpDetails = tpLevels.map(tp => {
+        const tpPrice = parseFloat(tp.price);
+        const tpPercent = parseFloat(tp.percent);
+
+        if (isNaN(tpPrice) || isNaN(tpPercent)) return null;
+
+        const rrRatio = +(Math.abs(tpPrice - EP) / Math.abs(EP - SL)).toFixed(2);
+
+        return {
+            price: tpPrice,
+            percent: tpPercent,
+            rrRatio
+        };
+    }).filter(Boolean);
+
+    const RR = tpDetails.length > 0
+        ? +(tpDetails.reduce((acc, tp) => acc + tp.rrRatio * (tp.percent / 100), 0).toFixed(2))
+        : null;
+
+
+    const maxRR = tpDetails.length > 0
+        ? +(tpDetails.reduce((acc, tp) => acc + tp.rrRatio * (tp.percent / 100), 0).toFixed(2))
+        : null;
+
     const date = new Date().toISOString().split('T')[0];
 
     const reportData = {
@@ -78,7 +101,9 @@ export function calculateReport({
         takeProfitPrice: TP,
         traderNote,
         status,
+        tpDetails,
         totalProfit,
+        maxRR,
     };
 
     return reportData;

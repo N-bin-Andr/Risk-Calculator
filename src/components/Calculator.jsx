@@ -32,6 +32,8 @@ const Calculator = () => {
     } = useInstrumentHistory();
 
     const [selectedInstruments, setSelectedInstruments] = useState([]);
+    const [reportData, setReportData] = useState(null);
+
 
     const toggleInstrumentSelection = name => {
         setSelectedInstruments(prev =>
@@ -170,12 +172,14 @@ const Calculator = () => {
 
 
         try {
-            const reportData = calculateReport({ ...state, deposit, riskSize, status });
-            dispatch({ type: 'SET_FIELD', field: 'slPoints', value: reportData.slPoints });
-            dispatch({ type: 'SET_FIELD', field: 'vCoins', value: reportData.vCoins });
-            dispatch({ type: 'SET_FIELD', field: 'vValue', value: reportData.vValue });
-            dispatch({ type: 'SET_FIELD', field: 'riskValue', value: reportData.riskValue });
-            dispatch({ type: 'SET_FIELD', field: 'rrRatio', value: reportData.rrRatio });
+            const report = calculateReport({ ...state, deposit, riskSize, status });
+            setReportData(report);
+
+            dispatch({ type: 'SET_FIELD', field: 'slPoints', value: report.slPoints });
+            dispatch({ type: 'SET_FIELD', field: 'vCoins', value: report.vCoins });
+            dispatch({ type: 'SET_FIELD', field: 'vValue', value: report.vValue });
+            dispatch({ type: 'SET_FIELD', field: 'riskValue', value: report.riskValue });
+            dispatch({ type: 'SET_FIELD', field: 'rrRatio', value: report.rrRatio });
             dispatch({ type: 'SET_FIELD', field: 'showReport', value: true });
             addInstrument(state.instrument);
             await sendReportToNotion(
@@ -299,7 +303,7 @@ const Calculator = () => {
 
                             <fieldset className="form-section">
                                 <legend>🎯 Уровни Take Profit</legend>
-                                {state.tpLevels.map((tp, index) => (
+                                {Array.isArray(state.tpLevels) && state.tpLevels.map((tp, index) => (
                                     <div
                                         key={index}
                                         title={!isDirectionChosen ? tooltipText : ''}
@@ -556,7 +560,28 @@ const Calculator = () => {
                         <p><strong>Ценовой уровень входа:</strong> {state.entryPrice} USDT</p>
                         <p><strong>Размер позиции (в активах):</strong> {typeof state.vCoins === 'number' ? state.vCoins.toFixed(2) : '—'}</p>
                         <p><strong>Размер позиции (в USDT):</strong> {typeof state.vValue === 'number' ? state.vValue.toFixed(2) : '—'}</p>
-                        <p><strong>Ценовой уровень TP:</strong> {state.takeProfitPrice || '—'} USDT</p>
+
+                        {reportData.tpDetails?.length > 0 && (
+                            <>
+                                <h3 className="report-section-title">🎯 Уровни Take Profit</h3>
+                                <ul>
+                                    {reportData.tpDetails.map((tp, i) => (
+                                        <li key={i}>
+                                            • {tp.price} — {tp.percent}% R:R={tp.rrRatio}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </>
+                        )}
+
+                        {typeof reportData.totalProfit === 'number' && (
+                            <p><strong>Ожидаемая прибыль:</strong> ${reportData.totalProfit}</p>
+                        )}
+
+                        {typeof reportData.maxRR === 'number' && (
+                            <p><strong>Максимальный R:R:</strong> {reportData.maxRR}</p>
+                        )}
+
                         <p><strong>Risk/Reward:</strong> {state.rrRatio || '—'}</p>
                         <h3 className="report-section-title">🛡️ Риск-менеджмент</h3>
                         <p><strong>Ценовой уровень SL:</strong> {state.slPrice} USDT</p>
