@@ -1,5 +1,3 @@
-// utils/calculateReport.js
-
 export function calculateReport({
     deposit,
     riskSize,
@@ -61,25 +59,34 @@ export function calculateReport({
     const tpDetails = tpLevels.map(tp => {
         const tpPrice = parseFloat(tp.price);
         const tpPercent = parseFloat(tp.percent);
+        const action = status === 'Buy' ? 'Продать' : 'Купить';
 
         if (isNaN(tpPrice) || isNaN(tpPercent)) return null;
 
-        const rrRatio = +(Math.abs(tpPrice - EP) / Math.abs(EP - SL)).toFixed(2);
+        const rrRatio = (Math.abs(tpPrice - EP) / Math.abs(EP - SL)).toFixed(1);
+        const vc = +(VC * (tpPercent / 100)).toFixed(2);
 
         return {
             price: tpPrice,
             percent: tpPercent,
-            rrRatio
+            rrRatio,
+            vc,
+            action
         };
     }).filter(Boolean);
 
+    const totalVC = tpDetails.reduce((acc, tp) => acc + tp.vc, 0);
+
+    if (totalVC > VC + 0.01) {
+        throw new Error(`Суммарный объём V(c) по TP (${totalVC}) превышает общий объём позиции (${VC})`);
+    }
+
     const RR = tpDetails.length > 0
-        ? +(tpDetails.reduce((acc, tp) => acc + tp.rrRatio * (tp.percent / 100), 0).toFixed(2))
+        ? +(tpDetails.reduce((acc, tp) => acc + parseFloat(tp.rrRatio) * (tp.percent / 100), 0).toFixed(2))
         : null;
 
-
     const maxRR = tpDetails.length > 0
-        ? +(tpDetails.reduce((acc, tp) => acc + tp.rrRatio * (tp.percent / 100), 0).toFixed(2))
+        ? +(tpDetails.reduce((acc, tp) => acc + parseFloat(tp.rrRatio) * (tp.percent / 100), 0).toFixed(1))
         : null;
 
     const date = new Date().toISOString().split('T')[0];

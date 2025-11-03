@@ -567,7 +567,7 @@ const Calculator = () => {
                                 <ul>
                                     {reportData.tpDetails.map((tp, i) => (
                                         <li key={i}>
-                                            • {tp.price} — {tp.percent}% R:R={tp.rrRatio}
+                                            • {tp.price}$ — {tp.percent}% {tp.action} {tp.vc} R:R={tp.rrRatio}
                                         </li>
                                     ))}
                                 </ul>
@@ -581,8 +581,6 @@ const Calculator = () => {
                         {typeof reportData.maxRR === 'number' && (
                             <p><strong>Максимальный R:R:</strong> {reportData.maxRR}</p>
                         )}
-
-                        <p><strong>Risk/Reward:</strong> {state.rrRatio || '—'}</p>
                         <h3 className="report-section-title">🛡️ Риск-менеджмент</h3>
                         <p><strong>Ценовой уровень SL:</strong> {state.slPrice} USDT</p>
                         <p><strong>Риск на сделку:</strong> {riskSize}%</p>
