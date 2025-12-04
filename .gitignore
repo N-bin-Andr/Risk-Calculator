@@ -22,3 +22,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 README.md
+/src/.env
+README.md
+a97c3ab (chore: исключён README.md из отслеживания)
