@@ -2,11 +2,12 @@ import React, { useState, useRef } from 'react';
 import { sendReportToNotion } from '../services/notionService';
 import '../styles/styles.css';
 import html2canvas from 'html2canvas';
-import { calculateReport } from '../utils/calculateReport';
 import { useInstrumentHistory } from '../hooks/useInstrumentHistory';
 import { useReducer, useEffect } from 'react';
 import { calculatorReducer, initialState } from '../reducers/calculatorReducer';
 import { validateFields } from '../utils/validateCalculator';
+import { calculateReport, getDirectionLabel } from '../utils/calculateReport';
+
 
 
 const Calculator = () => {
@@ -68,10 +69,10 @@ const Calculator = () => {
         if (!isNaN(SL) && !isNaN(EP) && direction) {
             if (SL === EP) {
                 dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL не должен совпадать с ценой входа' });
-            } else if (direction === 'buy' && SL > EP) {
-                dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть ниже цены входа при покупке' });
-            } else if (direction === 'sell' && SL < EP) {
-                dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть выше цены входа при продаже' });
+            } else if (direction === 'long' && SL > EP) {
+                dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть ниже цены входа при Long позиции' });
+            } else if (direction === 'short' && SL < EP) {
+                dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть выше цены входа при Short позиции' });
             } else {
                 dispatch({ type: 'SET_FIELD', field: 'slError', value: '' });
             }
@@ -90,10 +91,10 @@ const Calculator = () => {
                 tpErrors.push(`TP ${i + 1}: цена не указана`);
             } else if (price === EP) {
                 tpErrors.push(`TP ${i + 1}: не должен совпадать с ценой входа`);
-            } else if (direction === 'buy' && price < EP) {
-                tpErrors.push(`TP ${i + 1}: должен быть выше цены входа при покупке`);
+            } else if (direction === 'long' && price < EP) {
+                tpErrors.push(`TP ${i + 1}: должен быть выше цены входа при Long позиции`);
             } else if (direction === 'sell' && price > EP) {
-                tpErrors.push(`TP ${i + 1}: должен быть ниже цены входа при продаже`);
+                tpErrors.push(`TP ${i + 1}: должен быть ниже цены входа при Short позиции`);
             }
 
             if (isNaN(percent) || percent <= 0) {
@@ -135,7 +136,7 @@ const Calculator = () => {
         localStorage.setItem('savedRiskSize', state.riskSize);
     }, [state.riskSize]);
 
-    const isDirectionChosen = state.direction === 'buy' || state.direction === 'sell';
+    const isDirectionChosen = state.direction === 'long' || state.direction === 'short';
     const tooltipText = 'Сначала выберите направление сделки';
     const [deposit, setDeposit] = useState(() => { return localStorage.getItem('lastDeposit') || ''; });
     const [riskSize, setRiskSize] = useState(() => { return localStorage.getItem('lastRiskSize') || ''; });
@@ -251,8 +252,8 @@ const Calculator = () => {
                                 }
                             >
                                 <option value="">Выберите направление</option>
-                                <option value="buy">Покупка</option>
-                                <option value="sell">Продажа</option>
+                                <option value="long">Покупка</option>
+                                <option value="short">Продажа</option>
                             </select>
                             <div className="inline-field">
                                 <label>Инструмент:</label>
@@ -403,10 +404,10 @@ const Calculator = () => {
 
                                         if (SL === EP) {
                                             dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL не должен совпадать с ценой входа' });
-                                        } else if (state.direction === 'buy' && SL > EP) {
-                                            dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть ниже цены входа при покупке' });
-                                        } else if (state.direction === 'sell' && SL < EP) {
-                                            dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть выше цены входа при продаже' });
+                                        } else if (state.direction === 'long' && SL > EP) {
+                                            dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть ниже цены входа при Long позиции' });
+                                        } else if (state.direction === 'short' && SL < EP) {
+                                            dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть выше цены входа при Short позиции' });
                                         } else {
                                             dispatch({ type: 'SET_FIELD', field: 'slError', value: '' });
                                         }
@@ -554,7 +555,7 @@ const Calculator = () => {
                         <h3 className="report-section-title">📄 Ордер</h3>
                         <p><strong>ID:</strong> {state.reportId}</p>
                         <p><strong>Депозит на сделку:</strong> {deposit} USDT</p>
-                        <p><strong>Направление сделки:</strong> {state.direction === 'Buy' ? 'Buy' : 'Sell'}</p>
+                        <p><strong>Направление сделки:</strong> {getDirectionLabel(state.direction)}</p>
                         <p><strong>Дата:</strong> {state.date}</p>
                         <h3 className="report-section-title">💰 Параметры позиции:</h3>
                         <p><strong>Ценовой уровень входа:</strong> {state.entryPrice} USDT</p>

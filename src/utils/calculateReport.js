@@ -1,3 +1,7 @@
+export const getDirectionLabel = (dir) => {
+    if (!dir) return "—";
+    return dir.toLowerCase() === "long" ? "Long" : "Short";
+};
 export function calculateReport({
     deposit,
     riskSize,
@@ -26,8 +30,8 @@ export function calculateReport({
         throw new Error('Некорректные входные данные');
     }
 
-    if (direction !== 'buy' && direction !== 'sell') {
-        throw new Error('Направление сделки должно быть "buy" или "sell"');
+    if (direction !== 'long' && direction !== 'short') {
+        throw new Error('Направление сделки должно быть "Long" или "Short"');
     }
 
     if (takeProfitPrice && isNaN(TP)) {
@@ -49,7 +53,7 @@ export function calculateReport({
         if (isNaN(tpPrice) || isNaN(tpPercent)) return;
 
         const volume = VC * (tpPercent / 100);
-        const profitPerUnit = direction === 'buy' ? tpPrice - EP : EP - tpPrice;
+        const profitPerUnit = direction === 'long' ? tpPrice - EP : EP - tpPrice;
 
         totalProfit += profitPerUnit * volume;
     });
@@ -59,7 +63,7 @@ export function calculateReport({
     const tpDetails = tpLevels.map(tp => {
         const tpPrice = parseFloat(tp.price);
         const tpPercent = parseFloat(tp.percent);
-        const action = status === 'Buy' ? 'Продать' : 'Купить';
+        const action = status === 'long' ? 'Продать' : 'Купить';
 
         if (isNaN(tpPrice) || isNaN(tpPercent)) return null;
 

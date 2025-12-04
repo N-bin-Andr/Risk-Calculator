@@ -10,14 +10,14 @@ export function validateFields(state) {
 
     if (!isNaN(TP)) {
         if (TP === EP) errors.tpError = 'TP не должен совпадать с ценой входа';
-        else if (state.direction === 'buy' && TP < EP) errors.tpError = 'TP должен быть выше цены входа при покупке';
-        else if (state.direction === 'sell' && TP > EP) errors.tpError = 'TP должен быть ниже цены входа при продаже';
+        else if (state.direction === 'buy' && TP < EP) errors.tpError = 'TP должен быть выше цены входа при Long позиции';
+        else if (state.direction === 'sell' && TP > EP) errors.tpError = 'TP должен быть ниже цены входа при Short позиции';
     }
 
     if (!isNaN(SL)) {
         if (SL === EP) errors.slError = 'SL не должен совпадать с ценой входа';
-        else if (state.direction === 'buy' && SL > EP) errors.slError = 'SL должен быть ниже цены входа при покупке';
-        else if (state.direction === 'sell' && SL < EP) errors.slError = 'SL должен быть выше цены входа при продаже';
+        else if (state.direction === 'buy' && SL > EP) errors.slError = 'SL должен быть ниже цены входа при Long позиции';
+        else if (state.direction === 'sell' && SL < EP) errors.slError = 'SL должен быть выше цены входа при Short позиции';
     }
 
     return errors;
