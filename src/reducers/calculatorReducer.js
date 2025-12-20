@@ -82,8 +82,6 @@ export function calculatorReducer(state, action) {
             return {
                 ...state,
                 gridEnabled: !state.gridEnabled,
-                // При включении сетки сбрасываем обычный entryPrice
-                ...(!state.gridEnabled && state.entryPrice ? { entryPrice: '' } : {})
             };
 
         case 'SET_GRID_ORDERS_COUNT':
