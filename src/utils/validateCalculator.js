@@ -27,25 +27,77 @@ export function validateFields(state) {
             errors.gridError = 'Количество ордеров должно быть от 1 до 10';
         }
 
-        // Проверка распределения
+        // Проверка распределения (поэтапное заполнение)
         if (state.gridDistribution && Array.isArray(state.gridDistribution)) {
-            const totalPercent = state.gridDistribution.reduce((sum, percent) => sum + parseFloat(percent || 0), 0);
+            let totalPercent = 0;
+            let hasEmptyBeforeLast = false;
+            let hasInvalidValue = false;
 
-            if (Math.abs(totalPercent - 100) > 0.01) { // Допуск 0.01%
-                errors.gridError = errors.gridError
-                    ? `${errors.gridError}. Сумма распределения должна быть 100% (сейчас: ${totalPercent.toFixed(2)}%)`
-                    : `Сумма распределения должна быть 100% (сейчас: ${totalPercent.toFixed(2)}%)`;
+            // Проверяем каждое поле кроме последнего
+            for (let i = 0; i < state.gridDistribution.length - 1; i++) {
+                const val = state.gridDistribution[i];
+
+                if (val === '' || val === undefined || val === null) {
+                    hasEmptyBeforeLast = true;
+                    if (!errors.gridError && i === 0) {
+                        errors.gridError = `Заполните поле для ордера ${i + 1}`;
+                    }
+                } else {
+                    const p = parseFloat(val);
+                    if (isNaN(p)) {
+                        hasInvalidValue = true;
+                        errors.gridError = errors.gridError
+                            ? `${errors.gridError}. Ордер ${i + 1}: введите число`
+                            : `Ордер ${i + 1}: введите число`;
+                    } else if (p <= 0) {
+                        hasInvalidValue = true;
+                        errors.gridError = errors.gridError
+                            ? `${errors.gridError}. Ордер ${i + 1}: значение должно быть > 0`
+                            : `Ордер ${i + 1}: значение должно быть > 0`;
+                    } else if (p > 100) {
+                        hasInvalidValue = true;
+                        errors.gridError = errors.gridError
+                            ? `${errors.gridError}. Ордер ${i + 1}: значение не может превышать 100%`
+                            : `Ордер ${i + 1}: значение не может превышать 100%`;
+                    } else {
+                        totalPercent += p;
+                    }
+                }
             }
 
-            // Проверка каждого значения
-            state.gridDistribution.forEach((percent, index) => {
-                const p = parseFloat(percent);
-                if (isNaN(p) || p < 0 || p > 100) {
+            // Проверяем последнее поле (должно быть заполнено автоматически)
+            const lastIndex = state.gridDistribution.length - 1;
+            const lastValue = state.gridDistribution[lastIndex];
+
+            if (!hasEmptyBeforeLast && !hasInvalidValue) {
+                // Все предыдущие поля заполнены корректно
+                const lastNum = parseFloat(lastValue);
+
+                if (isNaN(lastNum)) {
                     errors.gridError = errors.gridError
-                        ? `${errors.gridError}. Ордер ${index + 1}: процент должен быть от 0 до 100`
-                        : `Ордер ${index + 1}: процент должен быть от 0 до 100`;
+                        ? `${errors.gridError}. Последнее поле не рассчитано`
+                        : 'Ошибка расчета последнего поля';
+                } else if (lastNum < 0) {
+                    errors.gridError = errors.gridError
+                        ? `${errors.gridError}. Сумма превышает 100% (остаток: ${lastNum.toFixed(1)}%)`
+                        : `Сумма превышает 100% (остаток: ${lastNum.toFixed(1)}%)`;
+                } else {
+                    const finalTotal = totalPercent + lastNum;
+
+                    if (Math.abs(finalTotal - 100) > 0.1) {
+                        errors.gridError = errors.gridError
+                            ? `${errors.gridError}. Сумма должна быть 100% (сейчас: ${finalTotal.toFixed(1)}%)`
+                            : `Сумма должна быть 100% (сейчас: ${finalTotal.toFixed(1)}%)`;
+                    }
                 }
-            });
+            }
+
+            // Проверка на текст "Ошибка: >100%" в последнем поле
+            if (typeof lastValue === 'string' && lastValue.includes('Ошибка: >100%')) {
+                errors.gridError = errors.gridError
+                    ? `${errors.gridError}. Сумма введенных значений превышает 100%`
+                    : 'Сумма введенных значений превышает 100%';
+            }
         }
 
         // Проверка что есть цена входа и SL для расчета сетки
