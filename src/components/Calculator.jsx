@@ -177,7 +177,7 @@ const Calculator = () => {
                 status,
                 gridEnabled: state.gridEnabled,
                 gridOrdersCount: state.gridOrdersCount,
-                gridDistribution: state.gridDistribution
+                gridDistribution: state.gridDistribution.map(val => parseFloat(val) || 0)
             });
             setReportData(report);
 
@@ -242,6 +242,44 @@ const Calculator = () => {
         dispatch({ type: 'SET_FIELD', field, value: e.target.value });
     };
 
+    // Функция для определения доступности поля распределения
+    const isGridFieldEnabled = (index) => {
+        if (!state.gridEnabled || !state.gridDistribution || !isDirectionChosen) {
+            return false;
+        }
+
+        // Первое поле всегда доступно (если выбрано направление)
+        if (index === 0) return true;
+
+        // Последнее поле всегда заблокировано (рассчитывается автоматически)
+        if (index === state.gridOrdersCount - 1) return false;
+
+        // Проверяем, заполнены ли все предыдущие поля
+        for (let i = 0; i < index; i++) {
+            const val = state.gridDistribution[i];
+            if (val === '' || val === undefined || val === null) {
+                return false;
+            }
+            const numVal = parseFloat(val);
+            if (isNaN(numVal) || numVal <= 0) {
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    // Функция для получения текста плейсхолдера
+    const getGridFieldPlaceholder = (index) => {
+        if (index === state.gridOrdersCount - 1) {
+            return "Рассчитается автоматически";
+        }
+        if (index === 0) {
+            return "Введите % (напр. 60)";
+        }
+        return "Заполните предыдущее поле";
+    };
+
     // Функция для отображения таблицы сетки ордеров
     const renderGridOrdersTable = () => {
         if (!state.gridEnabled || !state.gridPrices || state.gridPrices.length === 0) {
@@ -266,15 +304,15 @@ const Calculator = () => {
                             <tr key={index}>
                                 <td>{index + 1}</td>
                                 <td>{price}</td>
-                                <td>{state.gridDistribution[index]?.toFixed(1)}%</td>
+                                <td>{state.gridDistribution[index] ? parseFloat(state.gridDistribution[index]).toFixed(1) + '%' : '—'}</td>
                                 <td>{state.gridQuantities[index]?.toFixed(8)}</td>
-                                <td>{(state.gridQuantities[index] * price).toFixed(2)}</td>
+                                <td>{state.gridQuantities[index] ? (state.gridQuantities[index] * price).toFixed(2) : '—'}</td>
                             </tr>
                         ))}
                         {state.gridAveragePrice > 0 && (
                             <tr className="grid-summary-row">
                                 <td colSpan="2"><strong>Средняя цена:</strong></td>
-                                <td colSpan="3"><strong>{state.gridAveragePrice.toFixed(4)}</strong></td>
+                                <td colSpan="3"><strong>{state.gridAveragePrice.toFixed(4)} USDT</strong></td>
                             </tr>
                         )}
                     </tbody>
@@ -404,33 +442,52 @@ const Calculator = () => {
                                         />
                                     </div>
 
-                                    {/* Поля распределения процентов */}
+                                    {/* Поля распределения процентов с поэтапным заполнением */}
                                     {Array.from({ length: state.gridOrdersCount }).map((_, index) => (
                                         <div key={index} className="inline-field">
                                             <label>Ордер {index + 1} (%):</label>
                                             <input
                                                 type="number"
-                                                step="1"
+                                                step="0.1"
                                                 min="0"
                                                 max="100"
-                                                value={state.gridDistribution[index] || 0}
-                                                onChange={e =>
+                                                value={state.gridDistribution[index] || ''}
+                                                onChange={e => {
+                                                    const value = e.target.value === '' ? '' : parseFloat(e.target.value);
                                                     dispatch({
                                                         type: 'UPDATE_GRID_DISTRIBUTION',
                                                         index,
-                                                        value: parseFloat(e.target.value) || 0
-                                                    })
+                                                        value
+                                                    });
+                                                }}
+                                                disabled={!isGridFieldEnabled(index)}
+                                                placeholder={getGridFieldPlaceholder(index)}
+                                                className={
+                                                    index === state.gridOrdersCount - 1 && state.gridDistribution[index]
+                                                        ? 'auto-calculated-field'
+                                                        : ''
                                                 }
-                                                disabled={!isDirectionChosen}
+                                                style={{
+                                                    backgroundColor: index === state.gridOrdersCount - 1 && state.gridDistribution[index]
+                                                        ? '#f0f8ff'
+                                                        : 'white'
+                                                }}
                                             />
                                         </div>
                                     ))}
 
                                     <div className="distribution-total">
-                                        <strong>Сумма: {state.gridDistribution.reduce((sum, p) => sum + (parseFloat(p) || 0), 0).toFixed(1)}%</strong>
-                                        {Math.abs(state.gridDistribution.reduce((sum, p) => sum + (parseFloat(p) || 0), 0) - 100) > 0.1 && (
-                                            <span className="error-text"> (должно быть 100%)</span>
-                                        )}
+                                        <strong>
+                                            Сумма: {state.gridDistribution.reduce((sum, p) => {
+                                                const num = parseFloat(p);
+                                                return sum + (isNaN(num) ? 0 : num);
+                                            }, 0).toFixed(1)}%
+                                        </strong>
+                                        {state.gridDistribution[state.gridOrdersCount - 1] &&
+                                            typeof state.gridDistribution[state.gridOrdersCount - 1] === 'string' &&
+                                            state.gridDistribution[state.gridOrdersCount - 1].includes('Ошибка') && (
+                                                <span className="error-text"> (превышает 100%)</span>
+                                            )}
                                     </div>
                                 </fieldset>
                             )}
@@ -718,7 +775,9 @@ const Calculator = () => {
                                             <tr key={index}>
                                                 <td style={{ border: '1px solid #ccc', padding: '5px' }}>{index + 1}</td>
                                                 <td style={{ border: '1px solid #ccc', padding: '5px' }}>{price} USDT</td>
-                                                <td style={{ border: '1px solid #ccc', padding: '5px' }}>{state.gridDistribution[index]?.toFixed(1)}%</td>
+                                                <td style={{ border: '1px solid #ccc', padding: '5px' }}>
+                                                    {state.gridDistribution[index] ? parseFloat(state.gridDistribution[index]).toFixed(1) + '%' : '—'}
+                                                </td>
                                                 <td style={{ border: '1px solid #ccc', padding: '5px' }}>{state.gridQuantities[index]?.toFixed(8)}</td>
                                             </tr>
                                         ))}
