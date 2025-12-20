@@ -106,12 +106,24 @@ export function calculatorReducer(state, action) {
 
         case 'UPDATE_GRID_DISTRIBUTION':
             const updatedDistribution = [...state.gridDistribution];
-            const newValue = action.value === '' ? '' : Math.max(0, Math.min(100, action.value));
+            let newValue;
+
+            if (action.value === '') {
+                newValue = '';
+            } else {
+                const numValue = parseFloat(action.value);
+                newValue = isNaN(numValue) ? '' : Math.max(0, Math.min(100, numValue));
+            }
+
             updatedDistribution[action.index] = newValue;
 
             // Автоматически заполняем последнее поле, если все предыдущие заполнены
-            const filledIndices = updatedDistribution.slice(0, -1).filter(val => val !== '' && val !== undefined).length;
+            const filledIndices = updatedDistribution.slice(0, -1).filter(val =>
+                val !== '' && val !== undefined && val !== null
+            ).length;
+
             const sumFilled = updatedDistribution.slice(0, -1).reduce((sum, val) => {
+                if (val === '' || val === undefined || val === null) return sum;
                 const numVal = parseFloat(val);
                 return sum + (isNaN(numVal) ? 0 : numVal);
             }, 0);

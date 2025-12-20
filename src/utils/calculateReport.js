@@ -11,7 +11,7 @@ export function calculateGridReport({
     slPrice,
     direction,
     gridOrdersCount = 3,
-    gridDistribution = [60, 30, 10]
+    gridDistribution = []
 }) {
     const D = parseFloat(deposit);
     const R = parseFloat(riskSize);
@@ -29,6 +29,20 @@ export function calculateGridReport({
 
     if (direction !== 'long' && direction !== 'short') {
         throw new Error('Направление сделки должно быть "Long" или "Short"');
+    }
+
+    // Проверяем распределение
+    if (!gridDistribution || gridDistribution.length === 0) {
+        throw new Error('Распределение по ордерам не задано');
+    }
+
+    // Преобразуем все значения в числа
+    const distribution = gridDistribution.map(val => parseFloat(val) || 0);
+
+    // Проверяем сумму распределения
+    const totalPercent = distribution.reduce((sum, p) => sum + p, 0);
+    if (Math.abs(totalPercent - 100) > 0.01) {
+        throw new Error(`Сумма распределения должна быть 100% (сейчас: ${totalPercent.toFixed(2)}%)`);
     }
 
     // 1. Рассчитываем шаг цены
@@ -49,12 +63,12 @@ export function calculateGridReport({
 
     // 3. Рассчитываем среднюю цену входа
     let totalWeightedPrice = 0;
-    gridDistribution.forEach((percent, index) => {
+    distribution.forEach((percent, index) => {
         totalWeightedPrice += gridPrices[index] * (percent / 100);
     });
     const averagePrice = +totalWeightedPrice.toFixed(4);
 
-    // 4. Рассчитываем максимальный риск (1% от депозита)
+    // 4. Рассчитываем максимальный риск
     const maxRisk = D * (R / 100);
 
     // 5. Рассчитываем общее количество актива
@@ -62,7 +76,7 @@ export function calculateGridReport({
     const totalQuantity = +(maxRisk / priceDiff).toFixed(8);
 
     // 6. Распределяем количество по ордерам
-    const gridQuantities = gridDistribution.map(percent =>
+    const gridQuantities = distribution.map(percent =>
         +(totalQuantity * (percent / 100)).toFixed(8)
     );
 
@@ -81,7 +95,7 @@ export function calculateGridReport({
             order: idx + 1,
             price,
             quantity: gridQuantities[idx],
-            percent: gridDistribution[idx],
+            percent: distribution[idx],
             amount: +(gridQuantities[idx] * price).toFixed(2)
         })),
         gridStep: +priceStep.toFixed(4),
@@ -105,7 +119,7 @@ export function calculateReport({
     // Новые параметры для сетки
     gridEnabled = false,
     gridOrdersCount = 3,
-    gridDistribution = [60, 30, 10]
+    gridDistribution = []
 }) {
     const D = parseFloat(deposit);
     const R = parseFloat(riskSize);
@@ -132,8 +146,17 @@ export function calculateReport({
 
     // РАСЧЕТ ДЛЯ СЕТОЧНОГО ВХОДА
     let gridReport = null;
+    let calculatedEntryPrice = EP; // Сохраняем оригинальную цену входа
+
     if (gridEnabled) {
         try {
+            // Преобразуем распределение в числа
+            const distribution = gridDistribution.map(val => {
+                if (val === '' || val === undefined || val === null) return 0;
+                const num = parseFloat(val);
+                return isNaN(num) ? 0 : num;
+            });
+
             gridReport = calculateGridReport({
                 deposit: D,
                 riskSize: R,
@@ -141,11 +164,11 @@ export function calculateReport({
                 slPrice: SL,
                 direction,
                 gridOrdersCount,
-                gridDistribution
+                gridDistribution: distribution
             });
 
             // Используем среднюю цену сетки для дальнейших расчетов
-            EP = gridReport.gridAveragePrice;
+            calculatedEntryPrice = gridReport.gridAveragePrice;
         } catch (error) {
             throw new Error(`Ошибка расчета сетки: ${error.message}`);
         }
@@ -153,17 +176,17 @@ export function calculateReport({
 
     const reportId = `ORD-${Date.now()}F`;
     const RV = +(D * (R / 100)).toFixed(2);
-    const SP = +(Math.abs(EP - SL) / 0.0001).toFixed(1);
+    const SP = +(Math.abs(calculatedEntryPrice - SL) / 0.0001).toFixed(1);
 
     if (SP === 0) throw new Error('SL не может совпадать с ценой входа');
 
     const VC = gridEnabled
         ? gridReport.gridTotalQuantity
-        : +(RV / Math.abs(EP - SL)).toFixed(8);
+        : +(RV / Math.abs(calculatedEntryPrice - SL)).toFixed(8);
 
     const VV = gridEnabled
         ? gridReport.gridInvestment
-        : +(VC * EP).toFixed(2);
+        : +(VC * calculatedEntryPrice).toFixed(2);
 
     let totalProfit = 0;
     tpLevels.forEach(tp => {
@@ -173,7 +196,7 @@ export function calculateReport({
         if (isNaN(tpPrice) || isNaN(tpPercent)) return;
 
         const volume = VC * (tpPercent / 100);
-        const profitPerUnit = direction === 'long' ? tpPrice - EP : EP - tpPrice;
+        const profitPerUnit = direction === 'long' ? tpPrice - calculatedEntryPrice : calculatedEntryPrice - tpPrice;
 
         totalProfit += profitPerUnit * volume;
     });
@@ -187,7 +210,7 @@ export function calculateReport({
 
         if (isNaN(tpPrice) || isNaN(tpPercent)) return null;
 
-        const rrRatio = (Math.abs(tpPrice - EP) / Math.abs(EP - SL)).toFixed(1);
+        const rrRatio = (Math.abs(tpPrice - calculatedEntryPrice) / Math.abs(calculatedEntryPrice - SL)).toFixed(1);
         const vc = +(VC * (tpPercent / 100)).toFixed(8);
 
         return {
@@ -223,7 +246,7 @@ export function calculateReport({
         deposit: D,
         riskSize: R,
         riskValue: RV,
-        entryPrice: EP,
+        entryPrice: calculatedEntryPrice,
         slPrice: SL,
         slPoints: SP,
         vCoins: VC,

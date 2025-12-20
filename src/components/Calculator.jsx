@@ -177,7 +177,11 @@ const Calculator = () => {
                 status,
                 gridEnabled: state.gridEnabled,
                 gridOrdersCount: state.gridOrdersCount,
-                gridDistribution: state.gridDistribution.map(val => parseFloat(val) || 0)
+                gridDistribution: state.gridDistribution.map(val => {
+                    if (val === '' || val === undefined || val === null) return 0;
+                    const num = parseFloat(val);
+                    return isNaN(num) ? 0 : num;
+                })
             });
             setReportData(report);
 
@@ -447,18 +451,34 @@ const Calculator = () => {
                                         <div key={index} className="inline-field">
                                             <label>Ордер {index + 1} (%):</label>
                                             <input
-                                                type="number"
-                                                step="0.1"
-                                                min="0"
-                                                max="100"
+                                                type="text"
+                                                inputMode="decimal"
                                                 value={state.gridDistribution[index] || ''}
                                                 onChange={e => {
-                                                    const value = e.target.value === '' ? '' : parseFloat(e.target.value);
-                                                    dispatch({
-                                                        type: 'UPDATE_GRID_DISTRIBUTION',
-                                                        index,
-                                                        value
-                                                    });
+                                                    const inputValue = e.target.value;
+
+                                                    // Разрешаем только числа, точку и пустую строку
+                                                    if (inputValue === '' || /^\d*\.?\d*$/.test(inputValue)) {
+                                                        dispatch({
+                                                            type: 'UPDATE_GRID_DISTRIBUTION',
+                                                            index,
+                                                            value: inputValue
+                                                        });
+                                                    }
+                                                }}
+                                                onBlur={e => {
+                                                    // При потере фокуса нормализуем значение
+                                                    const inputValue = e.target.value;
+                                                    if (inputValue !== '') {
+                                                        const numValue = parseFloat(inputValue);
+                                                        if (!isNaN(numValue)) {
+                                                            dispatch({
+                                                                type: 'UPDATE_GRID_DISTRIBUTION',
+                                                                index,
+                                                                value: numValue.toString()
+                                                            });
+                                                        }
+                                                    }
                                                 }}
                                                 disabled={!isGridFieldEnabled(index)}
                                                 placeholder={getGridFieldPlaceholder(index)}
@@ -804,7 +824,7 @@ const Calculator = () => {
                         )}
 
                         {typeof reportData?.maxRR === 'number' && (
-                            <p><strong>Максимальный R:R:</strong> {reportData.maxRR}</p>
+                            <p><strong>Итоговый R:R:</strong> {reportData.maxRR}</p>
                         )}
                         <h3 className="report-section-title">🛡️ Риск-менеджмент</h3>
                         <p><strong>Ценовой уровень SL:</strong> {state.slPrice} USDT</p>
