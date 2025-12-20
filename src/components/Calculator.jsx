@@ -349,19 +349,6 @@ const Calculator = () => {
                     <label htmlFor="isBacktest">Это Backtest</label>
                 </div>
 
-                {/* === НОВЫЙ ПЕРЕКЛЮЧАТЕЛЬ СЕТОЧНОГО ВХОДА === */}
-                <div className="inline-checkbox">
-                    <input
-                        type="checkbox"
-                        id="gridEnabled"
-                        checked={state.gridEnabled}
-                        onChange={() => dispatch({ type: 'TOGGLE_GRID' })}
-                    />
-                    <label htmlFor="gridEnabled" style={{ fontWeight: 'bold', color: state.gridEnabled ? '#007bff' : '#333' }}>
-                        📊 Сеточный вход
-                    </label>
-                </div>
-
                 <div className="layout-columns">
                     <div className="left-column">
                         {/* Блок 1: Направление и инструмент */}
@@ -424,9 +411,22 @@ const Calculator = () => {
                             </div>
                             {isNaN(state.entryPrice) && <span className="error-text">Введите число</span>}
 
+                            {/* === ПЕРЕКЛЮЧАТЕЛЬ СЕТОЧНОГО ВХОДА (под полем Цена входа) === */}
+                            <div className="inline-checkbox" style={{ marginTop: '10px', marginBottom: '10px' }}>
+                                <input
+                                    type="checkbox"
+                                    id="gridEnabled"
+                                    checked={state.gridEnabled}
+                                    onChange={() => dispatch({ type: 'TOGGLE_GRID' })}
+                                />
+                                <label htmlFor="gridEnabled" style={{ fontWeight: 'bold', color: state.gridEnabled ? '#007bff' : '#333' }}>
+                                    📊 Сеточный вход
+                                </label>
+                            </div>
+
                             {/* === НАСТРОЙКИ СЕТКИ (отображаются только при включенной сетке) === */}
                             {state.gridEnabled && (
-                                <fieldset className="form-section grid-settings">
+                                <fieldset className="form-section grid-settings" style={{ marginTop: '15px' }}>
                                     <legend>⚙️ Настройки сетки</legend>
                                     <div className="inline-field">
                                         <label>Кол-во ордеров:</label>
