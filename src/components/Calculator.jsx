@@ -8,8 +8,6 @@ import { calculatorReducer, initialState } from '../reducers/calculatorReducer';
 import { validateFields } from '../utils/validateCalculator';
 import { calculateReport, getDirectionLabel } from '../utils/calculateReport';
 
-
-
 const Calculator = () => {
     let savedState;
     try {
@@ -34,7 +32,6 @@ const Calculator = () => {
 
     const [selectedInstruments, setSelectedInstruments] = useState([]);
     const [reportData, setReportData] = useState(null);
-
 
     const toggleInstrumentSelection = name => {
         setSelectedInstruments(prev =>
@@ -151,6 +148,7 @@ const Calculator = () => {
 
         dispatch({ type: 'SET_FIELD', field: 'tpError', value: errors.tpError || '' });
         dispatch({ type: 'SET_FIELD', field: 'slError', value: errors.slError || '' });
+        dispatch({ type: 'SET_FIELD', field: 'gridError', value: errors.gridError || '' });
 
         if (Object.keys(errors).length > 0) {
             alert('Пожалуйста, исправьте ошибки перед расчётом');
@@ -171,9 +169,16 @@ const Calculator = () => {
         const date = new Date().toLocaleDateString();
         dispatch({ type: 'SET_FIELD', field: 'date', value: date });
 
-
         try {
-            const report = calculateReport({ ...state, deposit, riskSize, status });
+            const report = calculateReport({
+                ...state,
+                deposit,
+                riskSize,
+                status,
+                gridEnabled: state.gridEnabled,
+                gridOrdersCount: state.gridOrdersCount,
+                gridDistribution: state.gridDistribution
+            });
             setReportData(report);
 
             dispatch({ type: 'SET_FIELD', field: 'slPoints', value: report.slPoints });
@@ -182,6 +187,21 @@ const Calculator = () => {
             dispatch({ type: 'SET_FIELD', field: 'riskValue', value: report.riskValue });
             dispatch({ type: 'SET_FIELD', field: 'rrRatio', value: report.rrRatio });
             dispatch({ type: 'SET_FIELD', field: 'showReport', value: true });
+
+            // Сохраняем результаты расчета сетки
+            if (state.gridEnabled && report.gridReport) {
+                dispatch({
+                    type: 'SET_GRID_CALCULATION_RESULTS',
+                    prices: report.gridReport.gridPrices,
+                    quantities: report.gridReport.gridQuantities,
+                    averagePrice: report.gridReport.gridAveragePrice,
+                    totalQuantity: report.gridReport.gridTotalQuantity,
+                    investment: report.gridReport.gridInvestment
+                });
+            } else {
+                dispatch({ type: 'RESET_GRID_CALCULATION' });
+            }
+
             addInstrument(state.instrument);
             await sendReportToNotion(
                 { ...state, deposit, riskSize, status },
@@ -222,6 +242,53 @@ const Calculator = () => {
         dispatch({ type: 'SET_FIELD', field, value: e.target.value });
     };
 
+    // Функция для отображения таблицы сетки ордеров
+    const renderGridOrdersTable = () => {
+        if (!state.gridEnabled || !state.gridPrices || state.gridPrices.length === 0) {
+            return null;
+        }
+
+        return (
+            <div className="grid-orders-table">
+                <h4>📊 Ордера сетки:</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Цена (USDT)</th>
+                            <th>%</th>
+                            <th>Количество</th>
+                            <th>Сумма (USDT)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {state.gridPrices.map((price, index) => (
+                            <tr key={index}>
+                                <td>{index + 1}</td>
+                                <td>{price}</td>
+                                <td>{state.gridDistribution[index]?.toFixed(1)}%</td>
+                                <td>{state.gridQuantities[index]?.toFixed(8)}</td>
+                                <td>{(state.gridQuantities[index] * price).toFixed(2)}</td>
+                            </tr>
+                        ))}
+                        {state.gridAveragePrice > 0 && (
+                            <tr className="grid-summary-row">
+                                <td colSpan="2"><strong>Средняя цена:</strong></td>
+                                <td colSpan="3"><strong>{state.gridAveragePrice.toFixed(4)}</strong></td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+                {state.gridTotalQuantity > 0 && (
+                    <div className="grid-total-info">
+                        <p><strong>Общее количество:</strong> {state.gridTotalQuantity.toFixed(8)}</p>
+                        <p><strong>Общая инвестиция:</strong> {state.gridInvestment.toFixed(2)} USDT</p>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     if (!state) return null;
 
     return (
@@ -238,6 +305,19 @@ const Calculator = () => {
                         }
                     />
                     <label htmlFor="isBacktest">Это Backtest</label>
+                </div>
+
+                {/* === НОВЫЙ ПЕРЕКЛЮЧАТЕЛЬ СЕТОЧНОГО ВХОДА === */}
+                <div className="inline-checkbox">
+                    <input
+                        type="checkbox"
+                        id="gridEnabled"
+                        checked={state.gridEnabled}
+                        onChange={() => dispatch({ type: 'TOGGLE_GRID' })}
+                    />
+                    <label htmlFor="gridEnabled" style={{ fontWeight: 'bold', color: state.gridEnabled ? '#007bff' : '#333' }}>
+                        📊 Сеточный вход
+                    </label>
                 </div>
 
                 <div className="layout-columns">
@@ -292,15 +372,68 @@ const Calculator = () => {
                                 <label>Цена входа:</label>
                                 <input
                                     type="number"
+                                    step="0.0001"
                                     value={state.entryPrice}
                                     onChange={e =>
                                         dispatch({ type: 'SET_FIELD', field: 'entryPrice', value: e.target.value })
                                     }
-                                    disabled={!isDirectionChosen}
+                                    disabled={!isDirectionChosen || state.gridEnabled}
                                 />
-
                             </div>
                             {isNaN(state.entryPrice) && <span className="error-text">Введите число</span>}
+
+                            {/* === НАСТРОЙКИ СЕТКИ (отображаются только при включенной сетке) === */}
+                            {state.gridEnabled && (
+                                <fieldset className="form-section grid-settings">
+                                    <legend>⚙️ Настройки сетки</legend>
+                                    <div className="inline-field">
+                                        <label>Кол-во ордеров:</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="10"
+                                            step="1"
+                                            value={state.gridOrdersCount}
+                                            onChange={e =>
+                                                dispatch({
+                                                    type: 'SET_GRID_ORDERS_COUNT',
+                                                    value: parseInt(e.target.value) || 3
+                                                })
+                                            }
+                                            disabled={!isDirectionChosen}
+                                        />
+                                    </div>
+
+                                    {/* Поля распределения процентов */}
+                                    {Array.from({ length: state.gridOrdersCount }).map((_, index) => (
+                                        <div key={index} className="inline-field">
+                                            <label>Ордер {index + 1} (%):</label>
+                                            <input
+                                                type="number"
+                                                step="1"
+                                                min="0"
+                                                max="100"
+                                                value={state.gridDistribution[index] || 0}
+                                                onChange={e =>
+                                                    dispatch({
+                                                        type: 'UPDATE_GRID_DISTRIBUTION',
+                                                        index,
+                                                        value: parseFloat(e.target.value) || 0
+                                                    })
+                                                }
+                                                disabled={!isDirectionChosen}
+                                            />
+                                        </div>
+                                    ))}
+
+                                    <div className="distribution-total">
+                                        <strong>Сумма: {state.gridDistribution.reduce((sum, p) => sum + (parseFloat(p) || 0), 0).toFixed(1)}%</strong>
+                                        {Math.abs(state.gridDistribution.reduce((sum, p) => sum + (parseFloat(p) || 0), 0) - 100) > 0.1 && (
+                                            <span className="error-text"> (должно быть 100%)</span>
+                                        )}
+                                    </div>
+                                </fieldset>
+                            )}
 
                             <fieldset className="form-section">
                                 <legend>🎯 Уровни Take Profit</legend>
@@ -361,7 +494,6 @@ const Calculator = () => {
                                 </button>
                                 {state.tpError && <span className="error-text">{state.tpError}</span>}
                             </fieldset>
-
 
                             <div title={!isDirectionChosen ? tooltipText : ''} className="inline-field">
                                 <label>Статус сделки: </label>
@@ -432,6 +564,8 @@ const Calculator = () => {
                             </div>
                         </fieldset>
 
+                        {/* Таблица сетки ордеров в результатах */}
+                        {renderGridOrdersTable()}
                     </div>
 
                     <div className="instrument-history">
@@ -498,10 +632,13 @@ const Calculator = () => {
                 <fieldset className="report-section">
                     <legend>📊 Результаты расчёта</legend>
                     <div className="results">
-                        <p>Размер позиции (в активе): {typeof state.vCoins === 'number' ? state.vCoins.toFixed(2) : '—'}</p>
+                        <p>Размер позиции (в активе): {typeof state.vCoins === 'number' ? state.vCoins.toFixed(8) : '—'}</p>
                         <p>Размер позиции (USDT): {typeof state.vValue === 'number' ? state.vValue.toFixed(2) : '—'}</p>
                         <p>Риск в USDT: {typeof state.riskValue === 'number' ? state.riskValue.toFixed(2) : '—'}</p>
                         {state.rrRatio && <p>Risk/Reward: {state.rrRatio}</p>}
+                        {state.gridEnabled && state.gridAveragePrice > 0 && (
+                            <p><strong>Средняя цена сетки:</strong> {state.gridAveragePrice.toFixed(4)} USDT</p>
+                        )}
                     </div>
                 </fieldset>
 
@@ -510,7 +647,7 @@ const Calculator = () => {
                     <button
                         type="button"
                         onClick={calculate}
-                        disabled={!!state.slError || !!state.tpError}
+                        disabled={!!state.slError || !!state.tpError || !!state.gridError}
                     >
                         Рассчитать
                     </button>
@@ -518,7 +655,7 @@ const Calculator = () => {
                     <button
                         type="button"
                         onClick={exportToImage}
-                        disabled={!!state.slError || !!state.tpError}
+                        disabled={!!state.slError || !!state.tpError || !!state.gridError}
                     >
                         Экспорт в изображение
                     </button>
@@ -531,16 +668,15 @@ const Calculator = () => {
                 </div>
             </form>
 
-            {(state.tpError || state.slError) && (
+            {(state.tpError || state.slError || state.gridError) && (
                 <div className="form-errors">
                     <ul>
                         {state.tpError && <li><span className="error-icon">⚠️</span> {state.tpError}</li>}
                         {state.slError && <li><span className="error-icon">⚠️</span> {state.slError}</li>}
+                        {state.gridError && <li><span className="error-icon">⚠️</span> {state.gridError}</li>}
                     </ul>
                 </div>
             )}
-
-
 
             {showReport && (
                 <div ref={reportRef} className="report-container" style={{ visibility: 'visible' }}>
@@ -559,10 +695,39 @@ const Calculator = () => {
                         <p><strong>Дата:</strong> {state.date}</p>
                         <h3 className="report-section-title">💰 Параметры позиции:</h3>
                         <p><strong>Ценовой уровень входа:</strong> {state.entryPrice} USDT</p>
-                        <p><strong>Размер позиции (в активах):</strong> {typeof state.vCoins === 'number' ? state.vCoins.toFixed(2) : '—'}</p>
+                        <p><strong>Размер позиции (в активах):</strong> {typeof state.vCoins === 'number' ? state.vCoins.toFixed(8) : '—'}</p>
                         <p><strong>Размер позиции (в USDT):</strong> {typeof state.vValue === 'number' ? state.vValue.toFixed(2) : '—'}</p>
 
-                        {reportData.tpDetails?.length > 0 && (
+                        {/* Отображение сетки в отчете */}
+                        {state.gridEnabled && state.gridPrices && state.gridPrices.length > 0 && (
+                            <>
+                                <h3 className="report-section-title">📊 Сеточный вход</h3>
+                                <p><strong>Количество ордеров:</strong> {state.gridOrdersCount}</p>
+                                <p><strong>Средняя цена входа:</strong> {state.gridAveragePrice.toFixed(4)} USDT</p>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+                                    <thead>
+                                        <tr>
+                                            <th style={{ border: '1px solid #ccc', padding: '5px' }}>#</th>
+                                            <th style={{ border: '1px solid #ccc', padding: '5px' }}>Цена</th>
+                                            <th style={{ border: '1px solid #ccc', padding: '5px' }}>%</th>
+                                            <th style={{ border: '1px solid #ccc', padding: '5px' }}>Кол-во</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {state.gridPrices.map((price, index) => (
+                                            <tr key={index}>
+                                                <td style={{ border: '1px solid #ccc', padding: '5px' }}>{index + 1}</td>
+                                                <td style={{ border: '1px solid #ccc', padding: '5px' }}>{price} USDT</td>
+                                                <td style={{ border: '1px solid #ccc', padding: '5px' }}>{state.gridDistribution[index]?.toFixed(1)}%</td>
+                                                <td style={{ border: '1px solid #ccc', padding: '5px' }}>{state.gridQuantities[index]?.toFixed(8)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </>
+                        )}
+
+                        {reportData?.tpDetails?.length > 0 && (
                             <>
                                 <h3 className="report-section-title">🎯 Уровни Take Profit</h3>
                                 <ul>
@@ -575,11 +740,11 @@ const Calculator = () => {
                             </>
                         )}
 
-                        {typeof reportData.totalProfit === 'number' && (
+                        {typeof reportData?.totalProfit === 'number' && (
                             <p><strong>Ожидаемая прибыль:</strong> ${reportData.totalProfit}</p>
                         )}
 
-                        {typeof reportData.maxRR === 'number' && (
+                        {typeof reportData?.maxRR === 'number' && (
                             <p><strong>Максимальный R:R:</strong> {reportData.maxRR}</p>
                         )}
                         <h3 className="report-section-title">🛡️ Риск-менеджмент</h3>
