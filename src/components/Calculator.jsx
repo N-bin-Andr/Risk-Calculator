@@ -284,53 +284,6 @@ const Calculator = () => {
         return "Заполните предыдущее поле";
     };
 
-    // Функция для отображения таблицы сетки ордеров
-    const renderGridOrdersTable = () => {
-        if (!state.gridEnabled || !state.gridPrices || state.gridPrices.length === 0) {
-            return null;
-        }
-
-        return (
-            <div className="grid-orders-table">
-                <h4>📊 Ордера сетки:</h4>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Цена (USDT)</th>
-                            <th>%</th>
-                            <th>Количество</th>
-                            <th>Сумма (USDT)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {state.gridPrices.map((price, index) => (
-                            <tr key={index}>
-                                <td>{index + 1}</td>
-                                <td>{price}</td>
-                                <td>{state.gridDistribution[index] ? parseFloat(state.gridDistribution[index]).toFixed(1) + '%' : '—'}</td>
-                                <td>{state.gridQuantities[index]?.toFixed(8)}</td>
-                                <td>{state.gridQuantities[index] ? (state.gridQuantities[index] * price).toFixed(2) : '—'}</td>
-                            </tr>
-                        ))}
-                        {state.gridAveragePrice > 0 && (
-                            <tr className="grid-summary-row">
-                                <td colSpan="2"><strong>Средняя цена:</strong></td>
-                                <td colSpan="3"><strong>{state.gridAveragePrice.toFixed(4)} USDT</strong></td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-                {state.gridTotalQuantity > 0 && (
-                    <div className="grid-total-info">
-                        <p><strong>Общее количество:</strong> {state.gridTotalQuantity.toFixed(8)}</p>
-                        <p><strong>Общая инвестиция:</strong> {state.gridInvestment.toFixed(2)} USDT</p>
-                    </div>
-                )}
-            </div>
-        );
-    };
-
     if (!state) return null;
 
     return (
@@ -640,9 +593,6 @@ const Calculator = () => {
                                 />
                             </div>
                         </fieldset>
-
-                        {/* Таблица сетки ордеров в результатах */}
-                        {renderGridOrdersTable()}
                     </div>
 
                     <div className="instrument-history">
@@ -709,12 +659,59 @@ const Calculator = () => {
                 <fieldset className="report-section">
                     <legend>📊 Результаты расчёта</legend>
                     <div className="results">
-                        <p>Размер позиции (в активе): {typeof state.vCoins === 'number' ? state.vCoins.toFixed(8) : '—'}</p>
-                        <p>Размер позиции (USDT): {typeof state.vValue === 'number' ? state.vValue.toFixed(2) : '—'}</p>
-                        <p>Риск в USDT: {typeof state.riskValue === 'number' ? state.riskValue.toFixed(2) : '—'}</p>
-                        {state.rrRatio && <p>Risk/Reward: {state.rrRatio}</p>}
-                        {state.gridEnabled && state.gridAveragePrice > 0 && (
-                            <p><strong>Средняя цена сетки:</strong> {state.gridAveragePrice.toFixed(4)} USDT</p>
+                        {/* РЕЖИМ ОДИН ОРДЕР (gridEnabled = false) */}
+                        {!state.gridEnabled && (
+                            <>
+                                <p>Размер позиции (в активе): {typeof state.vCoins === 'number' ? state.vCoins.toFixed(8) : '—'}</p>
+                                <p>Размер позиции (USDT): {typeof state.vValue === 'number' ? state.vValue.toFixed(2) : '—'}</p>
+                                <p>Риск в USDT: {typeof state.riskValue === 'number' ? state.riskValue.toFixed(2) : '—'}</p>
+                                {state.rrRatio && <p>Risk/Reward: {state.rrRatio}</p>}
+                            </>
+                        )}
+
+                        {/* РЕЖИМ СЕТОЧНЫЙ ВХОД (gridEnabled = true) */}
+                        {state.gridEnabled && state.gridPrices && state.gridPrices.length > 0 && (
+                            <div className="grid-results">
+                                <div className="grid-summary">
+                                    <p><strong>Средняя цена входа:</strong> {state.gridAveragePrice.toFixed(4)} USDT</p>
+                                    <p><strong>Общее количество:</strong> {state.gridTotalQuantity.toFixed(8)}</p>
+                                    <p><strong>Общая инвестиция:</strong> {state.gridInvestment.toFixed(2)} USDT</p>
+                                    <p><strong>Риск в USDT:</strong> {typeof state.riskValue === 'number' ? state.riskValue.toFixed(2) : '—'}</p>
+                                </div>
+
+                                <div className="grid-orders-table" style={{ marginTop: '15px' }}>
+                                    <h4 style={{ marginBottom: '10px' }}>📊 Ордера сетки:</h4>
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Цена (USDT)</th>
+                                                <th>%</th>
+                                                <th>Количество</th>
+                                                <th>Сумма (USDT)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {state.gridPrices.map((price, index) => (
+                                                <tr key={index}>
+                                                    <td>{index + 1}</td>
+                                                    <td>{price}</td>
+                                                    <td>{state.gridDistribution[index] ? parseFloat(state.gridDistribution[index]).toFixed(1) + '%' : '—'}</td>
+                                                    <td>{state.gridQuantities[index]?.toFixed(8)}</td>
+                                                    <td>{state.gridQuantities[index] ? (state.gridQuantities[index] * price).toFixed(2) : '—'}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Если сетка включена, но расчетов еще нет */}
+                        {state.gridEnabled && (!state.gridPrices || state.gridPrices.length === 0) && (
+                            <p style={{ fontStyle: 'italic', color: '#666' }}>
+                                Нажмите "Рассчитать" для получения результатов сетки
+                            </p>
                         )}
                     </div>
                 </fieldset>
@@ -824,7 +821,7 @@ const Calculator = () => {
                         )}
 
                         {typeof reportData?.maxRR === 'number' && (
-                            <p><strong>Итоговый R:R:</strong> {reportData.maxRR}</p>
+                            <p><strong>Максимальный R:R:</strong> {reportData.maxRR}</p>
                         )}
                         <h3 className="report-section-title">🛡️ Риск-менеджмент</h3>
                         <p><strong>Ценовой уровень SL:</strong> {state.slPrice} USDT</p>
