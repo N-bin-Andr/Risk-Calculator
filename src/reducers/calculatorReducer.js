@@ -1,78 +1,3 @@
-// calculatorReducer.js
-
-/*export const initialState = {
-   tpError: '',
-   slError: '',
-   isBacktest: false,
-   direction: '',
-   instrument: '',
-   entryPrice: '',
-   slPrice: '',
-   takeProfitPrice: '',
-   tpLevels: [{ price: '', percent: 100 }],
-   traderNote: '',
-   reportId: '',
-   date: '',
-   showReport: false,
-   vCoins: 0,
-   vValue: 0,
-   rrRatio: '',
-   riskValue: '',
-   slPoints: 0,
-};
-
-export function calculatorReducer(state, action) {
-   switch (action.type) {
-       case 'SET_FIELD':
-           return {
-               ...state,
-               [action.field]: action.value,
-           };
-       case 'RESET_FORM':
-           return initialState;
-
-       case 'RESET_FIELDS_EXCEPT':
-           const resetState = {};
-           Object.keys(state).forEach(key => {
-               if (action.fieldsToKeep.includes(key)) {
-                   resetState[key] = state[key];
-               } else {
-                   const initial = initialState[key];
-                   resetState[key] =
-                       Array.isArray(initial) ? [] :
-                           typeof initial === 'number' ? 0 :
-                               typeof initial === 'boolean' ? false :
-                                   typeof initial === 'object' ? {} :
-                                       '';
-               }
-           });
-           return resetState;
-
-
-       case 'ADD_TP_LEVEL':
-           return {
-               ...state,
-               tpLevels: [...state.tpLevels, { price: '', percent: 0 }]
-           };
-
-       case 'REMOVE_TP_LEVEL':
-           return {
-               ...state,
-               tpLevels: state.tpLevels.filter((_, i) => i !== action.index)
-           };
-
-       case 'UPDATE_TP_LEVEL':
-           return {
-               ...state,
-               tpLevels: state.tpLevels.map((tp, i) =>
-                   i === action.index ? { ...tp, [action.field]: action.value } : tp
-               )
-           };
-       default:
-           return state;
-   }
-}
-*/
 export const initialState = {
     tpError: '',
     slError: '',
@@ -96,7 +21,7 @@ export const initialState = {
     // === НОВЫЕ ПОЛЯ ДЛЯ СЕТОЧНОГО ВХОДА ===
     gridEnabled: false,           // Включен ли сеточный вход
     gridOrdersCount: 3,          // Количество ордеров в сетке (по умолчанию 3)
-    gridDistribution: [60, 30, 10], // Распределение % по ордерам
+    gridDistribution: ['', '', ''], // Распределение % по ордерам (пустые строки)
     gridPrices: [],               // Рассчитанные цены для каждого ордера
     gridQuantities: [],           // Рассчитанные объемы для каждого ордера
     gridAveragePrice: 0,          // Средняя цена входа по сетке
@@ -164,41 +89,44 @@ export function calculatorReducer(state, action) {
         case 'SET_GRID_ORDERS_COUNT':
             const newCount = Math.max(1, Math.min(10, action.value)); // Ограничение 1-10 ордеров
 
-            // Корректируем распределение при изменении количества ордеров
-            let newDistribution;
-            if (newCount > state.gridDistribution.length) {
-                // Добавляем новые ордера с равномерным распределением
-                newDistribution = [...state.gridDistribution];
-                const remainingPercent = 100 - state.gridDistribution.reduce((a, b) => a + b, 0);
-                const newOrderPercent = remainingPercent / (newCount - state.gridDistribution.length);
-                for (let i = state.gridDistribution.length; i < newCount; i++) {
-                    newDistribution.push(newOrderPercent);
-                }
-            } else {
-                // Уменьшаем количество ордеров, сохраняя пропорции
-                newDistribution = state.gridDistribution.slice(0, newCount);
-                const totalPercent = newDistribution.reduce((a, b) => a + b, 0);
-                // Нормализуем к 100%
-                newDistribution = newDistribution.map(p => (p / totalPercent) * 100);
-            }
+            // При изменении количества ордеров создаем пустой массив
+            const emptyDistribution = new Array(newCount).fill('');
 
             return {
                 ...state,
                 gridOrdersCount: newCount,
-                gridDistribution: newDistribution
+                gridDistribution: emptyDistribution,
+                // Сбрасываем результаты расчета при изменении конфигурации
+                gridPrices: [],
+                gridQuantities: [],
+                gridAveragePrice: 0,
+                gridTotalQuantity: 0,
+                gridInvestment: 0
             };
 
         case 'UPDATE_GRID_DISTRIBUTION':
             const updatedDistribution = [...state.gridDistribution];
-            updatedDistribution[action.index] = Math.max(0, Math.min(100, action.value));
+            const newValue = action.value === '' ? '' : Math.max(0, Math.min(100, action.value));
+            updatedDistribution[action.index] = newValue;
 
-            // Нормализуем сумму к 100%
-            const total = updatedDistribution.reduce((a, b) => a + b, 0);
-            if (total !== 100) {
-                const factor = 100 / total;
-                for (let i = 0; i < updatedDistribution.length; i++) {
-                    updatedDistribution[i] = updatedDistribution[i] * factor;
-                }
+            // Автоматически заполняем последнее поле, если все предыдущие заполнены
+            const filledIndices = updatedDistribution.slice(0, -1).filter(val => val !== '' && val !== undefined).length;
+            const sumFilled = updatedDistribution.slice(0, -1).reduce((sum, val) => {
+                const numVal = parseFloat(val);
+                return sum + (isNaN(numVal) ? 0 : numVal);
+            }, 0);
+
+            // Если все поля кроме последнего заполнены и сумма < 100, заполняем последнее
+            if (filledIndices === state.gridOrdersCount - 1 && sumFilled < 100) {
+                updatedDistribution[state.gridOrdersCount - 1] = +(100 - sumFilled).toFixed(1);
+            } else if (filledIndices < state.gridOrdersCount - 1) {
+                // Если не все заполнены, сбрасываем последнее
+                updatedDistribution[state.gridOrdersCount - 1] = '';
+            }
+
+            // Если сумма заполненных > 100, показываем ошибку в последнем поле
+            if (sumFilled > 100) {
+                updatedDistribution[state.gridOrdersCount - 1] = 'Ошибка: >100%';
             }
 
             return {
