@@ -377,7 +377,7 @@ const Calculator = () => {
                                     onChange={e =>
                                         dispatch({ type: 'SET_FIELD', field: 'entryPrice', value: e.target.value })
                                     }
-                                    disabled={!isDirectionChosen || state.gridEnabled}
+                                    disabled={!isDirectionChosen}
                                 />
                             </div>
                             {isNaN(state.entryPrice) && <span className="error-text">Введите число</span>}
