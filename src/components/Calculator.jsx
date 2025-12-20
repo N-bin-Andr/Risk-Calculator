@@ -767,40 +767,67 @@ const Calculator = () => {
                         <p><strong>Депозит на сделку:</strong> {deposit} USDT</p>
                         <p><strong>Направление сделки:</strong> {getDirectionLabel(state.direction)}</p>
                         <p><strong>Дата:</strong> {state.date}</p>
-                        <h3 className="report-section-title">💰 Параметры позиции:</h3>
-                        <p><strong>Ценовой уровень входа:</strong> {state.entryPrice} USDT</p>
-                        <p><strong>Размер позиции (в активах):</strong> {typeof state.vCoins === 'number' ? state.vCoins.toFixed(8) : '—'}</p>
-                        <p><strong>Размер позиции (в USDT):</strong> {typeof state.vValue === 'number' ? state.vValue.toFixed(2) : '—'}</p>
 
-                        {/* Отображение сетки в отчете */}
+                        <h3 className="report-section-title">💰 Параметры позиции:</h3>
+
+                        {/* РЕЖИМ ОДИН ОРДЕР (gridEnabled = false) */}
+                        {!state.gridEnabled && (
+                            <>
+                                <p><strong>Ценовой уровень входа:</strong> {state.entryPrice} USDT</p>
+                                <p><strong>Размер позиции (в активах):</strong> {typeof state.vCoins === 'number' ? state.vCoins.toFixed(8) : '—'}</p>
+                                <p><strong>Размер позиции (в USDT):</strong> {typeof state.vValue === 'number' ? state.vValue.toFixed(2) : '—'}</p>
+                            </>
+                        )}
+
+                        {/* РЕЖИМ СЕТОЧНЫЙ ВХОД (gridEnabled = true) */}
                         {state.gridEnabled && state.gridPrices && state.gridPrices.length > 0 && (
                             <>
-                                <h3 className="report-section-title">📊 Сеточный вход</h3>
                                 <p><strong>Количество ордеров:</strong> {state.gridOrdersCount}</p>
                                 <p><strong>Средняя цена входа:</strong> {state.gridAveragePrice.toFixed(4)} USDT</p>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+                                <p><strong>Общее количество:</strong> {state.gridTotalQuantity.toFixed(8)}</p>
+                                <p><strong>Общая инвестиция:</strong> {state.gridInvestment.toFixed(2)} USDT</p>
+
+                                <h4 style={{ marginTop: '15px', marginBottom: '10px', color: '#2c5282' }}>📊 Ордера сетки:</h4>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', fontSize: '14px' }}>
                                     <thead>
                                         <tr>
-                                            <th style={{ border: '1px solid #ccc', padding: '5px' }}>#</th>
-                                            <th style={{ border: '1px solid #ccc', padding: '5px' }}>Цена</th>
-                                            <th style={{ border: '1px solid #ccc', padding: '5px' }}>%</th>
-                                            <th style={{ border: '1px solid #ccc', padding: '5px' }}>Кол-во</th>
+                                            <th style={{ border: '1px solid #ccc', padding: '5px', backgroundColor: '#e8f4ff' }}>#</th>
+                                            <th style={{ border: '1px solid #ccc', padding: '5px', backgroundColor: '#e8f4ff' }}>Цена (USDT)</th>
+                                            <th style={{ border: '1px solid #ccc', padding: '5px', backgroundColor: '#e8f4ff' }}>%</th>
+                                            <th style={{ border: '1px solid #ccc', padding: '5px', backgroundColor: '#e8f4ff' }}>Кол-во</th>
+                                            <th style={{ border: '1px solid #ccc', padding: '5px', backgroundColor: '#e8f4ff' }}>Сумма (USDT)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {state.gridPrices.map((price, index) => (
                                             <tr key={index}>
                                                 <td style={{ border: '1px solid #ccc', padding: '5px' }}>{index + 1}</td>
-                                                <td style={{ border: '1px solid #ccc', padding: '5px' }}>{price} USDT</td>
+                                                <td style={{ border: '1px solid #ccc', padding: '5px' }}>{price}</td>
                                                 <td style={{ border: '1px solid #ccc', padding: '5px' }}>
                                                     {state.gridDistribution[index] ? parseFloat(state.gridDistribution[index]).toFixed(1) + '%' : '—'}
                                                 </td>
                                                 <td style={{ border: '1px solid #ccc', padding: '5px' }}>{state.gridQuantities[index]?.toFixed(8)}</td>
+                                                <td style={{ border: '1px solid #ccc', padding: '5px' }}>
+                                                    {state.gridQuantities[index] ? (state.gridQuantities[index] * price).toFixed(2) : '—'}
+                                                </td>
                                             </tr>
                                         ))}
+                                        {state.gridAveragePrice > 0 && (
+                                            <tr style={{ backgroundColor: '#e8f4ff', fontWeight: 'bold' }}>
+                                                <td colSpan="2" style={{ border: '1px solid #ccc', padding: '5px' }}><strong>Средняя цена:</strong></td>
+                                                <td colSpan="3" style={{ border: '1px solid #ccc', padding: '5px' }}>
+                                                    <strong>{state.gridAveragePrice.toFixed(4)} USDT</strong>
+                                                </td>
+                                            </tr>
+                                        )}
                                     </tbody>
                                 </table>
                             </>
+                        )}
+
+                        {/* Если сетка включена, но расчетов еще нет */}
+                        {state.gridEnabled && (!state.gridPrices || state.gridPrices.length === 0) && (
+                            <p><strong>Ценовой уровень входа:</strong> {state.entryPrice} USDT</p>
                         )}
 
                         {reportData?.tpDetails?.length > 0 && (
@@ -823,6 +850,7 @@ const Calculator = () => {
                         {typeof reportData?.maxRR === 'number' && (
                             <p><strong>Максимальный R:R:</strong> {reportData.maxRR}</p>
                         )}
+
                         <h3 className="report-section-title">🛡️ Риск-менеджмент</h3>
                         <p><strong>Ценовой уровень SL:</strong> {state.slPrice} USDT</p>
                         <p><strong>Риск на сделку:</strong> {riskSize}%</p>
