@@ -97,8 +97,6 @@ form {
 
 
 
-
-
 /* Метки и поля */
 .inline-checkbox {
     display: flex;
@@ -276,7 +274,6 @@ textarea {
 
 
 
-
 .report-section {
     border: 1px solid #ccc;
     padding: 16px;
@@ -429,4 +426,198 @@ label input[type="checkbox"] {
     background-color: #eef6ff;
     padding: 10px;
     border-left: 4px solid #0078d4;
+}
+
+/* === НОВЫЕ СТИЛИ ДЛЯ СЕТОЧНОГО ВХОДА === */
+
+/* Стиль для автоматически рассчитанного поля */
+.auto-calculated-field {
+    background-color: #f0f8ff !important;
+    font-weight: bold;
+    color: #2c5282;
+    cursor: not-allowed;
+}
+
+/* Стили для настроек сетки */
+.grid-settings {
+    background-color: #f5f9ff !important;
+    border-color: #cce5ff !important;
+    border-width: 2px !important;
+}
+
+.grid-settings legend {
+    color: #2c5282;
+    font-weight: bold;
+}
+
+/* Стили для таблицы сетки ордеров */
+.grid-orders-table {
+    margin-top: 20px;
+    border: 2px solid #cce5ff;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: #f5f9ff;
+}
+
+.grid-orders-table h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #2c5282;
+    border-bottom: 2px solid #cce5ff;
+    padding-bottom: 8px;
+}
+
+.grid-orders-table table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 13px;
+}
+
+.grid-orders-table th {
+    background-color: #e8f4ff;
+    padding: 8px;
+    text-align: left;
+    border-bottom: 2px solid #007bff;
+    color: #333;
+    font-weight: 600;
+}
+
+.grid-orders-table td {
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+    color: #444;
+}
+
+.grid-summary-row {
+    background-color: #e8f4ff;
+    font-weight: bold;
+    border-top: 2px solid #007bff;
+}
+
+.grid-summary-row td {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    color: #2c5282;
+}
+
+.grid-total-info {
+    margin-top: 15px;
+    padding: 12px;
+    background-color: #e8f4ff;
+    border-radius: 6px;
+    border-left: 4px solid #007bff;
+}
+
+.grid-total-info p {
+    margin: 6px 0;
+    font-size: 14px;
+    color: #333;
+}
+
+.grid-total-info strong {
+    color: #2c5282;
+}
+
+/* Информация о сумме распределения */
+.distribution-total {
+    margin-top: 12px;
+    padding: 10px;
+    background-color: #f0f8ff;
+    border-radius: 6px;
+    border: 1px solid #cce5ff;
+    font-size: 14px;
+}
+
+.distribution-total strong {
+    color: #2c5282;
+}
+
+/* Стили для полей ввода сетки */
+.grid-settings .inline-field input[type="number"] {
+    background-color: white;
+    border: 1px solid #cce5ff;
+}
+
+.grid-settings .inline-field input[type="number"]:disabled {
+    background-color: #f5f5f5;
+    color: #888;
+}
+
+.grid-settings .inline-field input[type="number"]:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* Стили для состояний полей сетки */
+.grid-settings .inline-field input[type="number"][placeholder="Рассчитается автоматически"] {
+    background-color: #f0f8ff;
+    color: #2c5282;
+    font-style: italic;
+}
+
+.grid-settings .inline-field input[type="number"][placeholder="Заполните предыдущее поле"] {
+    background-color: #f9f9f9;
+    color: #999;
+    cursor: not-allowed;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .grid-orders-table {
+        overflow-x: auto;
+    }
+
+    .grid-orders-table table {
+        min-width: 500px;
+    }
+
+    .grid-settings .inline-field {
+        flex-wrap: wrap;
+    }
+
+    .grid-settings .inline-field label {
+        width: 120px;
+        min-width: 120px;
+    }
+
+    .grid-settings .inline-field input {
+        width: 100px;
+        min-width: 100px;
+    }
+}
+
+/* Анимация для появления таблицы сетки */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.grid-orders-table {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Подсветка активного поля в сетке */
+.grid-settings .inline-field input:focus:not(.input-error):not(:disabled) {
+    background-color: #f0fff4;
+    border-color: #38a169;
+}
+
+/* Стиль для переключателя сетки */
+.inline-checkbox input[type="checkbox"]#gridEnabled {
+    width: 20px;
+    height: 20px;
+    accent-color: #007bff;
+}
+
+.inline-checkbox label[for="gridEnabled"] {
+    font-size: 15px;
+    font-weight: 600;
 }
