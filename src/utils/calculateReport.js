@@ -2,6 +2,94 @@ export const getDirectionLabel = (dir) => {
     if (!dir) return "—";
     return dir.toLowerCase() === "long" ? "Long" : "Short";
 };
+
+// НОВАЯ ФУНКЦИЯ: Расчет сеточного входа
+export function calculateGridReport({
+    deposit,
+    riskSize,
+    entryPrice,
+    slPrice,
+    direction,
+    gridOrdersCount = 3,
+    gridDistribution = [60, 30, 10]
+}) {
+    const D = parseFloat(deposit);
+    const R = parseFloat(riskSize);
+    const EP = parseFloat(entryPrice);
+    const SL = parseFloat(slPrice);
+
+    if (
+        isNaN(D) || D <= 0 ||
+        isNaN(R) || R <= 0 || R > 100 ||
+        isNaN(EP) || EP <= 0 ||
+        isNaN(SL) || SL <= 0
+    ) {
+        throw new Error('Некорректные входные данные для сетки');
+    }
+
+    if (direction !== 'long' && direction !== 'short') {
+        throw new Error('Направление сделки должно быть "Long" или "Short"');
+    }
+
+    // 1. Рассчитываем шаг цены
+    const priceRange = Math.abs(EP - SL);
+    const priceStep = priceRange / gridOrdersCount;
+
+    // 2. Рассчитываем цены для каждого ордера
+    const gridPrices = [];
+    for (let i = 0; i < gridOrdersCount; i++) {
+        if (direction === 'long') {
+            // Для лонга: от самой высокой (EP) к низкой
+            gridPrices.push(+(EP - (priceStep * i)).toFixed(4));
+        } else {
+            // Для шорта: от самой низкой (EP) к высокой
+            gridPrices.push(+(EP + (priceStep * i)).toFixed(4));
+        }
+    }
+
+    // 3. Рассчитываем среднюю цену входа
+    let totalWeightedPrice = 0;
+    gridDistribution.forEach((percent, index) => {
+        totalWeightedPrice += gridPrices[index] * (percent / 100);
+    });
+    const averagePrice = +totalWeightedPrice.toFixed(4);
+
+    // 4. Рассчитываем максимальный риск (1% от депозита)
+    const maxRisk = D * (R / 100);
+
+    // 5. Рассчитываем общее количество актива
+    const priceDiff = Math.abs(averagePrice - SL);
+    const totalQuantity = +(maxRisk / priceDiff).toFixed(8);
+
+    // 6. Распределяем количество по ордерам
+    const gridQuantities = gridDistribution.map(percent =>
+        +(totalQuantity * (percent / 100)).toFixed(8)
+    );
+
+    // 7. Рассчитываем сумму инвестиции
+    const investment = gridQuantities.reduce((sum, qty, idx) =>
+        sum + (qty * gridPrices[idx]), 0
+    );
+
+    return {
+        gridPrices,
+        gridQuantities,
+        gridAveragePrice: averagePrice,
+        gridTotalQuantity: totalQuantity,
+        gridInvestment: +investment.toFixed(2),
+        gridOrders: gridPrices.map((price, idx) => ({
+            order: idx + 1,
+            price,
+            quantity: gridQuantities[idx],
+            percent: gridDistribution[idx],
+            amount: +(gridQuantities[idx] * price).toFixed(2)
+        })),
+        gridStep: +priceStep.toFixed(4),
+        gridMaxRisk: +maxRisk.toFixed(2)
+    };
+}
+
+// ОБНОВЛЕННАЯ ФУНКЦИЯ: Основной расчет (с поддержкой сетки)
 export function calculateReport({
     deposit,
     riskSize,
@@ -13,7 +101,11 @@ export function calculateReport({
     traderNote,
     status,
     isBacktest,
-    tpLevels = []
+    tpLevels = [],
+    // Новые параметры для сетки
+    gridEnabled = false,
+    gridOrdersCount = 3,
+    gridDistribution = [60, 30, 10]
 }) {
     const D = parseFloat(deposit);
     const R = parseFloat(riskSize);
@@ -38,12 +130,40 @@ export function calculateReport({
         throw new Error('Take Profit должен быть числом');
     }
 
+    // РАСЧЕТ ДЛЯ СЕТОЧНОГО ВХОДА
+    let gridReport = null;
+    if (gridEnabled) {
+        try {
+            gridReport = calculateGridReport({
+                deposit: D,
+                riskSize: R,
+                entryPrice: EP,
+                slPrice: SL,
+                direction,
+                gridOrdersCount,
+                gridDistribution
+            });
+
+            // Используем среднюю цену сетки для дальнейших расчетов
+            EP = gridReport.gridAveragePrice;
+        } catch (error) {
+            throw new Error(`Ошибка расчета сетки: ${error.message}`);
+        }
+    }
+
     const reportId = `ORD-${Date.now()}F`;
     const RV = +(D * (R / 100)).toFixed(2);
     const SP = +(Math.abs(EP - SL) / 0.0001).toFixed(1);
+
     if (SP === 0) throw new Error('SL не может совпадать с ценой входа');
-    const VC = +(RV / Math.abs(EP - SL)).toFixed(2);
-    const VV = +(VC * EP).toFixed(2);
+
+    const VC = gridEnabled
+        ? gridReport.gridTotalQuantity
+        : +(RV / Math.abs(EP - SL)).toFixed(8);
+
+    const VV = gridEnabled
+        ? gridReport.gridInvestment
+        : +(VC * EP).toFixed(2);
 
     let totalProfit = 0;
     tpLevels.forEach(tp => {
@@ -63,12 +183,12 @@ export function calculateReport({
     const tpDetails = tpLevels.map(tp => {
         const tpPrice = parseFloat(tp.price);
         const tpPercent = parseFloat(tp.percent);
-        const action = status === 'long' ? 'Продать' : 'Купить';
+        const action = direction === 'long' ? 'Продать' : 'Купить';
 
         if (isNaN(tpPrice) || isNaN(tpPercent)) return null;
 
         const rrRatio = (Math.abs(tpPrice - EP) / Math.abs(EP - SL)).toFixed(1);
-        const vc = +(VC * (tpPercent / 100)).toFixed(2);
+        const vc = +(VC * (tpPercent / 100)).toFixed(8);
 
         return {
             price: tpPrice,
@@ -115,6 +235,9 @@ export function calculateReport({
         tpDetails,
         totalProfit,
         maxRR,
+        // Добавляем данные сетки в отчет
+        gridEnabled,
+        gridReport
     };
 
     return reportData;
