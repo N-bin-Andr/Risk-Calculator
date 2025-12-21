@@ -25,23 +25,19 @@ const Calculator = () => {
         { ...initialState, ...(savedState || {}) }
     );
 
-    // Хук истории инструментов
+    // Хук истории инструментов (только для добавления инструментов и подсказок)
     const {
         getSuggestions,
-        addInstrument,
-        history,
-        deleteInstrument,
-        exportHistoryAsJSON
+        addInstrument
     } = useInstrumentHistory();
 
     // Локальные состояния
-    const [selectedInstruments, setSelectedInstruments] = useState([]);
-    const [reportData, setReportData] = useState(null);
     const [deposit, setDeposit] = useState(() => localStorage.getItem('lastDeposit') || '');
     const [riskSize, setRiskSize] = useState(() => localStorage.getItem('lastRiskSize') || '');
     const [status, setStatus] = useState(() => localStorage.getItem('lastStatus') || 'Запланирован');
     const [instrumentSuggestions, setInstrumentSuggestions] = useState([]);
     const [showReport, setShowReport] = useState(false);
+    const [reportData, setReportData] = useState(null);
 
     // Refs
     const reportRef = useRef();
@@ -226,28 +222,6 @@ const Calculator = () => {
         }
     }, [state.gridEnabled, state.gridDistribution, state.gridOrdersCount, calculateLastGridField]);
 
-    // Обработчики событий
-    const toggleInstrumentSelection = (name) => {
-        setSelectedInstruments(prev =>
-            prev.includes(name)
-                ? prev.filter(item => item !== name)
-                : [...prev, name]
-        );
-    };
-
-    const toggleSelectAll = () => {
-        if (selectedInstruments.length === history.length) {
-            setSelectedInstruments([]);
-        } else {
-            setSelectedInstruments(history.map(item => item.name));
-        }
-    };
-
-    const handleDeleteSelected = () => {
-        selectedInstruments.forEach(name => deleteInstrument(name));
-        setSelectedInstruments([]);
-    };
-
     const calculate = async () => {
         const errors = validateFields(state);
 
@@ -380,7 +354,6 @@ const Calculator = () => {
         setDeposit('');
         setRiskSize('');
         setStatus('Запланирован');
-        setSelectedInstruments([]);
         setReportData(null);
         setShowReport(false);
 
@@ -397,6 +370,18 @@ const Calculator = () => {
     return (
         <div className="calculator">
             <h2>Расчёт параметров ордера</h2>
+
+            {/* Ссылка на историю инструментов */}
+            <div className="calculator-header-note">
+                <p>
+                    💡 <strong>Инструменты сохраняются автоматически.</strong>
+                    Для просмотра и управления историей инструментов перейдите в раздел
+                    <span className="link-to-history" onClick={() => window.location.hash = '#instruments'}>
+                        📚 История инструментов
+                    </span>
+                </p>
+            </div>
+
             <form onSubmit={(e) => e.preventDefault()}>
                 <div className="inline-checkbox">
                     <input
@@ -410,8 +395,8 @@ const Calculator = () => {
                     <label htmlFor="isBacktest">Это Backtest</label>
                 </div>
 
-                <div className="layout-columns">
-                    <div className="left-column">
+                <div className="calculator-layout">
+                    <div className="calculator-main-content">
                         {/* Блок 1: Направление и инструмент */}
                         <fieldset className="form-section">
                             <legend>📈 Параметры позиции</legend>
@@ -732,62 +717,6 @@ const Calculator = () => {
                                 />
                             </div>
                         </fieldset>
-                    </div>
-
-                    <div className="instrument-history">
-                        <fieldset className="form-section">
-                            <legend>📚 История инструментов:</legend>
-                            {history.length === 0 ? (
-                                <p style={{ opacity: 0.6 }}>История пуста</p>
-                            ) : (
-                                <ul className="instrument-history-list">
-                                    {history.map(({ name, count }) => (
-                                        <li key={name}>
-                                            <div className="inline-checkbox">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedInstruments.includes(name)}
-                                                    onChange={() => toggleInstrumentSelection(name)}
-                                                />
-                                                <span style={{ fontWeight: '500' }}>{name}</span>
-                                                <span style={{ opacity: 0.6, fontSize: '0.9em' }}>({count})</span>
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </fieldset>
-
-                        {history.length > 0 && (
-                            <>
-                                <div className="select-all-row">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedInstruments.length === history.length && history.length > 0}
-                                        onChange={toggleSelectAll}
-                                    />
-                                    <span>Выделить всё</span>
-                                </div>
-
-                                <div className="button-group">
-                                    <div className="instrument-history-actions">
-                                        <button
-                                            onClick={handleDeleteSelected}
-                                            disabled={selectedInstruments.length === 0}
-                                            style={{ backgroundColor: selectedInstruments.length === 0 ? '#ccc' : '#ff4444' }}
-                                        >
-                                            🗑️ Удалить выбранные
-                                        </button>
-                                        <button
-                                            onClick={exportHistoryAsJSON}
-                                            disabled={history.length === 0}
-                                        >
-                                            📤 Экспорт в JSON
-                                        </button>
-                                    </div>
-                                </div>
-                            </>
-                        )}
                     </div>
                 </div>
 
