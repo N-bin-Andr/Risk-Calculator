@@ -17,7 +17,7 @@ const App = () => {
 
     const menuItems = [
         { id: 'calculator', label: '🔄 Калькулятор', component: <Calculator /> },
-        { id: 'instruments', label: '📚 История инструментов', component: <InstrumentHistory history={instrumentHistory} /> },
+        { id: 'instruments', label: '📚 История инструментов', component: <InstrumentHistory history={instrumentHistory} setInstrumentHistory={setInstrumentHistory} /> },
         { id: 'settings', label: '⚙️ Настройки', component: <Settings /> },
         { id: 'history', label: '📊 История расчетов', component: <CalculationHistory /> },
         { id: 'templates', label: '📋 Шаблоны сеток', component: <GridTemplates /> },
@@ -58,7 +58,7 @@ const App = () => {
                 </nav>
 
                 <div className="user-info">
-                    <span className="version">v1.2.0</span>
+                    <span className="version">v1.3.0</span>
                     <button className="theme-toggle">🌙</button>
                 </div>
             </div>
@@ -79,7 +79,7 @@ const App = () => {
                         <li>📈 Калькулятор рисков</li>
                         <li>📚 История инструментов</li>
                         <li>📊 Сеточный вход</li>
-                        <li>📤 Экспорт отчетов</li>
+                        <li>📐 Настройка шага цены</li>
                     </ul>
                 </div>
 
@@ -94,10 +94,13 @@ const App = () => {
     );
 
     // Компонент для истории инструментов
-    function InstrumentHistory({ history }) {
+    function InstrumentHistory({ history, setInstrumentHistory }) {
         const [selectedInstruments, setSelectedInstruments] = useState([]);
         const [searchTerm, setSearchTerm] = useState('');
+        const [editingInstrument, setEditingInstrument] = useState(null);
+        const [priceStepInput, setPriceStepInput] = useState('');
 
+        // Фильтрация истории по поисковому запросу
         const filteredHistory = history.filter(item =>
             item.name.toLowerCase().includes(searchTerm.toLowerCase())
         );
@@ -125,6 +128,54 @@ const App = () => {
             setSelectedInstruments([]);
         };
 
+        const handleUpdatePriceStep = (name, priceStep) => {
+            const updatedHistory = history.map(item => {
+                if (item.name === name) {
+                    return {
+                        ...item,
+                        priceStep: priceStep !== null && priceStep !== '' ? parseFloat(priceStep) : null,
+                        lastUpdated: new Date().toISOString()
+                    };
+                }
+                return item;
+            });
+
+            setInstrumentHistory(updatedHistory);
+            localStorage.setItem('instrumentHistory', JSON.stringify(updatedHistory));
+            setEditingInstrument(null);
+            setPriceStepInput('');
+        };
+
+        const startEditPriceStep = (instrument) => {
+            setEditingInstrument(instrument.name);
+            setPriceStepInput(instrument.priceStep !== null && instrument.priceStep !== undefined ? instrument.priceStep.toString() : '');
+        };
+
+        const cancelEdit = () => {
+            setEditingInstrument(null);
+            setPriceStepInput('');
+        };
+
+        const getDefaultPriceStep = (instrumentName) => {
+            const lowerName = instrumentName.toLowerCase();
+
+            if (lowerName.includes('btc') || lowerName.includes('eth') ||
+                lowerName.includes('usdt') || lowerName.includes('bnb')) {
+                return 0.01;
+            }
+
+            if (lowerName.includes('.mx') || lowerName.includes('.me')) {
+                return 0.01;
+            }
+
+            if (lowerName.includes('usd') || lowerName.includes('eur') ||
+                lowerName.includes('gbp') || lowerName.includes('jpy')) {
+                return 0.0001;
+            }
+
+            return 0.01;
+        };
+
         const exportHistoryAsJSON = () => {
             if (history.length === 0) {
                 alert('История инструментов пуста');
@@ -134,7 +185,15 @@ const App = () => {
             const data = {
                 exportedAt: new Date().toISOString(),
                 totalInstruments: history.length,
-                instruments: history
+                version: '1.3.0',
+                instruments: history.map(item => ({
+                    name: item.name,
+                    count: item.count,
+                    priceStep: item.priceStep,
+                    createdAt: item.createdAt || new Date().toISOString(),
+                    lastUsed: item.lastUsed || new Date().toISOString(),
+                    lastUpdated: item.lastUpdated || null
+                }))
             };
 
             const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -156,6 +215,22 @@ const App = () => {
                 localStorage.removeItem('instrumentHistory');
                 setSelectedInstruments([]);
             }
+        };
+
+        const formatPriceStep = (priceStep, instrumentName) => {
+            if (priceStep === null || priceStep === undefined || priceStep === '') {
+                return (
+                    <span className="default-price-step" title="Используется значение по умолчанию">
+                        {getDefaultPriceStep(instrumentName)} (по умолчанию)
+                    </span>
+                );
+            }
+
+            return (
+                <span className="price-step-cell" title={`Шаг цены: ${priceStep} USDT`}>
+                    {priceStep} USDT
+                </span>
+            );
         };
 
         return (
@@ -194,7 +269,7 @@ const App = () => {
                 {history.length === 0 ? (
                     <div className="empty-state">
                         <p>📝 История инструментов пуста</p>
-                        <p className="hint">Инструменты будут автоматически добавляться при расчетах</p>
+                        <p className="hint">Инструменты будут автоматически добавляться при расчетах в калькуляторе</p>
                     </div>
                 ) : (
                     <>
@@ -218,13 +293,14 @@ const App = () => {
                             )}
                         </div>
 
-                        <div className="instrument-history-list-container">
+                        <div className="instrument-history-table-container">
                             <table className="instrument-history-table">
                                 <thead>
                                     <tr>
                                         <th style={{ width: '50px' }}></th>
                                         <th>Инструмент</th>
                                         <th>Использован</th>
+                                        <th>Шаг цены</th>
                                         <th>Действия</th>
                                     </tr>
                                 </thead>
@@ -245,24 +321,69 @@ const App = () => {
                                                 <span className="usage-count">{item.count} раз</span>
                                             </td>
                                             <td>
-                                                <button
-                                                    className="btn-small"
-                                                    onClick={() => setActiveSection('calculator')}
-                                                    title="Использовать в калькуляторе"
-                                                >
-                                                    Использовать
-                                                </button>
-                                                <button
-                                                    className="btn-small btn-danger"
-                                                    onClick={() => {
-                                                        const updatedHistory = history.filter(h => h.name !== item.name);
-                                                        setInstrumentHistory(updatedHistory);
-                                                        localStorage.setItem('instrumentHistory', JSON.stringify(updatedHistory));
-                                                    }}
-                                                    title="Удалить инструмент"
-                                                >
-                                                    Удалить
-                                                </button>
+                                                {editingInstrument === item.name ? (
+                                                    <div className="edit-price-step">
+                                                        <input
+                                                            type="number"
+                                                            step="0.000001"
+                                                            min="0.000001"
+                                                            max="1000"
+                                                            value={priceStepInput}
+                                                            onChange={(e) => setPriceStepInput(e.target.value)}
+                                                            placeholder="Шаг цены..."
+                                                            style={{ width: '100px', marginRight: '5px' }}
+                                                        />
+                                                        <button
+                                                            className="btn-small"
+                                                            onClick={() => handleUpdatePriceStep(item.name, priceStepInput)}
+                                                        >
+                                                            💾
+                                                        </button>
+                                                        <button
+                                                            className="btn-small btn-danger"
+                                                            onClick={cancelEdit}
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        {formatPriceStep(item.priceStep, item.name)}
+                                                        <button
+                                                            className="btn-settings"
+                                                            onClick={() => startEditPriceStep(item)}
+                                                            style={{ marginLeft: '8px' }}
+                                                            title="Изменить шаг цены"
+                                                        >
+                                                            ⚙️
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </td>
+                                            <td>
+                                                <div className="instrument-actions">
+                                                    <button
+                                                        className="btn-small"
+                                                        onClick={() => {
+                                                            setActiveSection('calculator');
+                                                            // Здесь можно добавить логику передачи инструмента в калькулятор
+                                                        }}
+                                                        title="Использовать в калькуляторе"
+                                                    >
+                                                        Использовать
+                                                    </button>
+                                                    <button
+                                                        className="btn-small btn-danger"
+                                                        onClick={() => {
+                                                            const updatedHistory = history.filter(h => h.name !== item.name);
+                                                            setInstrumentHistory(updatedHistory);
+                                                            localStorage.setItem('instrumentHistory', JSON.stringify(updatedHistory));
+                                                        }}
+                                                        title="Удалить инструмент"
+                                                    >
+                                                        Удалить
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -275,6 +396,35 @@ const App = () => {
                                 <strong>Всего инструментов:</strong> {history.length} |
                                 <strong> Отображается:</strong> {filteredHistory.length} |
                                 <strong> Выбрано:</strong> {selectedInstruments.length}
+                            </p>
+                            <p style={{ fontSize: '12px', marginTop: '5px', color: '#6c757d' }}>
+                                <strong>Шаг цены:</strong> Отображается кастомное значение или значение по умолчанию
+                            </p>
+                        </div>
+
+                        <div className="price-step-info-section">
+                            <h4>📋 Информация о шагах цены:</h4>
+                            <div className="info-grid">
+                                <div className="info-item">
+                                    <span className="info-label">Криптовалюты:</span>
+                                    <span className="info-value">0.01 USDT (1 цент)</span>
+                                </div>
+                                <div className="info-item">
+                                    <span className="info-label">Форекс:</span>
+                                    <span className="info-value">0.0001 USDT (1 пипс)</span>
+                                </div>
+                                <div className="info-item">
+                                    <span className="info-label">Акции:</span>
+                                    <span className="info-value">0.01 USDT (1 цент)</span>
+                                </div>
+                                <div className="info-item">
+                                    <span className="info-label">По умолчанию:</span>
+                                    <span className="info-value">0.01 USDT</span>
+                                </div>
+                            </div>
+                            <p className="info-note">
+                                💡 Шаг цены влияет на точность расчета пунктов (пипсов) между ценой входа и SL.
+                                Нажмите ⚙️ чтобы установить кастомное значение для инструмента.
                             </p>
                         </div>
                     </>
@@ -303,6 +453,15 @@ const App = () => {
                             <select defaultValue="ru">
                                 <option value="ru">Русский</option>
                                 <option value="en">English</option>
+                            </select>
+                        </div>
+                        <div className="setting-item">
+                            <label>Шаг цены по умолчанию:</label>
+                            <select defaultValue="auto">
+                                <option value="auto">Авто (определять по инструменту)</option>
+                                <option value="0.01">0.01 USDT (1 цент)</option>
+                                <option value="0.001">0.001 USDT</option>
+                                <option value="0.0001">0.0001 USDT (1 пипс)</option>
                             </select>
                         </div>
                     </div>
@@ -432,13 +591,15 @@ const App = () => {
                     </div>
 
                     <div className="help-section">
-                        <h3>📞 Поддержка</h3>
-                        <p>Если у вас возникли проблемы:</p>
+                        <h3>📐 Шаг цены (Tick Size)</h3>
+                        <p>Шаг цены влияет на точность расчетов:</p>
                         <ul>
-                            <li>📧 Email: support@riskcalc.pro</li>
-                            <li>💬 Telegram: @riskcalc_support</li>
-                            <li>🐛 Сообщить об ошибке: Создать Issue на GitHub</li>
+                            <li><strong>Криптовалюты:</strong> 0.01 USDT (1 цент)</li>
+                            <li><strong>Форекс:</strong> 0.0001 USDT (1 пипс)</li>
+                            <li><strong>Акции:</strong> 0.01 USDT (1 цент)</li>
+                            <li><strong>Настройка:</strong> Нажмите ⚙️ рядом с инструментом</li>
                         </ul>
+                        <p>Формула: Пункты = |Цена входа - Stop Loss| / Шаг цены</p>
                     </div>
                 </div>
             </div>
