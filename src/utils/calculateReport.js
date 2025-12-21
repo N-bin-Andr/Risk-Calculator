@@ -3,6 +3,39 @@ export const getDirectionLabel = (dir) => {
     return dir.toLowerCase() === "long" ? "Long" : "Short";
 };
 
+// Функция для получения шага цены (с учетом значения по умолчанию)
+export const getPriceStep = (instrumentName, customPriceStep, getDefaultPriceStep) => {
+    // Если задан кастомный шаг цены, используем его
+    if (customPriceStep !== null && customPriceStep !== undefined && !isNaN(customPriceStep) && customPriceStep > 0) {
+        return customPriceStep;
+    }
+
+    // Иначе используем значение по умолчанию
+    if (getDefaultPriceStep && typeof getDefaultPriceStep === 'function') {
+        return getDefaultPriceStep(instrumentName);
+    }
+
+    // Запасной вариант - общие значения по умолчанию
+    const lowerName = instrumentName ? instrumentName.toLowerCase() : '';
+
+    if (lowerName.includes('btc') || lowerName.includes('eth') ||
+        lowerName.includes('usdt') || lowerName.includes('bnb')) {
+        return 0.01; // 1 цент для крипто/USDT пар
+    }
+
+    if (lowerName.includes('.mx') || lowerName.includes('.me')) {
+        return 0.01; // 1 цент для акций
+    }
+
+    if (lowerName.includes('usd') || lowerName.includes('eur') ||
+        lowerName.includes('gbp') || lowerName.includes('jpy')) {
+        return 0.0001; // 1 пипс для форекс
+    }
+
+    // По умолчанию
+    return 0.01;
+};
+
 // НОВАЯ ФУНКЦИЯ: Расчет сеточного входа
 export function calculateGridReport({
     deposit,
@@ -11,7 +44,9 @@ export function calculateGridReport({
     slPrice,
     direction,
     gridOrdersCount = 3,
-    gridDistribution = []
+    gridDistribution = [],
+    priceStep = null,
+    getDefaultPriceStep
 }) {
     // Валидация входных данных
     const D = parseFloat(deposit);
@@ -81,23 +116,23 @@ export function calculateGridReport({
         throw new Error(`Сумма распределения должна быть 100% (сейчас: ${totalPercent.toFixed(2)}%).`);
     }
 
-    // 1. Рассчитываем шаг цены
+    // 1. Рассчитываем шаг цены (для сетки используем разницу между ордерами)
     const priceRange = Math.abs(EP - SL);
     if (priceRange <= 0) {
         throw new Error('Разница между ценой входа и Stop Loss слишком мала для расчета сетки.');
     }
 
-    const priceStep = priceRange / (gridOrdersCount - 1);
+    const priceStepGrid = priceRange / (gridOrdersCount - 1);
 
     // 2. Рассчитываем цены для каждого ордера
     const gridPrices = [];
     for (let i = 0; i < gridOrdersCount; i++) {
         if (direction === 'long') {
             // Для лонга: от самой высокой (EP) к низкой (SL)
-            gridPrices.push(+(EP - (priceStep * i)).toFixed(8));
+            gridPrices.push(+(EP - (priceStepGrid * i)).toFixed(8));
         } else {
             // Для шорта: от самой низкой (EP) к высокой (SL)
-            gridPrices.push(+(EP + (priceStep * i)).toFixed(8));
+            gridPrices.push(+(EP + (priceStepGrid * i)).toFixed(8));
         }
     }
 
@@ -118,10 +153,6 @@ export function calculateGridReport({
 
     // 5. Рассчитываем общее количество актива
     const priceDiff = Math.abs(averagePrice - SL);
-    if (priceDiff <= 0) {
-        throw new Error('Разница между средней ценой и Stop Loss слишком мала для расчета объема.');
-    }
-
     const totalQuantity = +(maxRisk / priceDiff).toFixed(8);
 
     // 6. Распределяем количество по ордерам
@@ -157,13 +188,13 @@ export function calculateGridReport({
         gridTotalQuantity: +totalQuantity.toFixed(8),
         gridInvestment: +investment.toFixed(2),
         gridOrders,
-        gridStep: +priceStep.toFixed(8),
+        gridStep: +priceStepGrid.toFixed(8),
         gridMaxRisk: +maxRisk.toFixed(2),
         gridTotalRisk: gridOrders.reduce((sum, order) => sum + order.riskPerOrder, 0)
     };
 }
 
-// ОБНОВЛЕННАЯ ФУНКЦИЯ: Основной расчет (с поддержкой сетки)
+// ОБНОВЛЕННАЯ ФУНКЦИЯ: Основной расчет (с поддержкой сетки и шага цены)
 export function calculateReport({
     deposit,
     riskSize,
@@ -179,7 +210,10 @@ export function calculateReport({
     // Новые параметры для сетки
     gridEnabled = false,
     gridOrdersCount = 3,
-    gridDistribution = []
+    gridDistribution = [],
+    // Параметр шага цены
+    priceStep = null,
+    getDefaultPriceStep
 }) {
     // Валидация основных параметров
     const D = parseFloat(deposit);
@@ -281,7 +315,9 @@ export function calculateReport({
                 slPrice: SL,
                 direction,
                 gridOrdersCount,
-                gridDistribution: distribution
+                gridDistribution: distribution,
+                priceStep,
+                getDefaultPriceStep
             });
 
             // Используем среднюю цену сетки для дальнейших расчетов
@@ -301,9 +337,22 @@ export function calculateReport({
     const seconds = String(now.getSeconds()).padStart(2, '0');
     const reportId = `ORD${day}${month}${year}${hours}${minutes}${seconds}F`;
 
+    // Определяем шаг цены для расчета пунктов
+    const calculatedPriceStep = getPriceStep(instrument, priceStep, getDefaultPriceStep);
+
     // Расчет риска
     const RV = +(D * (R / 100)).toFixed(2);
-    const SP = +(Math.abs(calculatedEntryPrice - SL) / 0.0001).toFixed(1);
+
+    // ОБНОВЛЕННЫЙ РАСЧЕТ ПУНКТОВ (с учетом шага цены)
+    const priceDiff = Math.abs(calculatedEntryPrice - SL);
+    let SP = 0;
+
+    if (calculatedPriceStep > 0) {
+        SP = +(priceDiff / calculatedPriceStep).toFixed(1);
+    } else {
+        // Запасной вариант, если шаг цены не задан
+        SP = +(priceDiff / 0.0001).toFixed(1);
+    }
 
     if (SP === 0) {
         throw new Error('Разница между ценой входа и Stop Loss слишком мала для расчета.');
@@ -342,18 +391,28 @@ export function calculateReport({
             const profit = profitPerUnit * volume;
             totalProfit += profit;
 
-            const rrRatio = (Math.abs(tpPrice - calculatedEntryPrice) / Math.abs(calculatedEntryPrice - SL)).toFixed(2);
+            // Расчет RR с учетом шага цены
+            let rrRatio = 0;
+            if (calculatedPriceStep > 0) {
+                const tpDistance = Math.abs(tpPrice - calculatedEntryPrice);
+                const slDistance = Math.abs(calculatedEntryPrice - SL);
+                rrRatio = (tpDistance / calculatedPriceStep) / (slDistance / calculatedPriceStep);
+            } else {
+                rrRatio = (Math.abs(tpPrice - calculatedEntryPrice) / Math.abs(calculatedEntryPrice - SL));
+            }
+
             const vc = +(volume).toFixed(8);
             const action = direction === 'long' ? 'Продать' : 'Купить';
 
             tpDetails.push({
                 price: +tpPrice.toFixed(8),
                 percent: +tpPercent.toFixed(2),
-                rrRatio: +parseFloat(rrRatio).toFixed(2),
+                rrRatio: +rrRatio.toFixed(2),
                 vc,
                 action,
                 profit: +profit.toFixed(2),
-                profitPercent: +((profit / VV) * 100).toFixed(2)
+                profitPercent: +((profit / VV) * 100).toFixed(2),
+                distanceInTicks: calculatedPriceStep > 0 ? +(Math.abs(tpPrice - calculatedEntryPrice) / calculatedPriceStep).toFixed(0) : null
             });
         });
 
@@ -400,6 +459,7 @@ export function calculateReport({
         entryPrice: +calculatedEntryPrice.toFixed(8),
         slPrice: +SL.toFixed(8),
         slPoints: SP,
+        priceStep: calculatedPriceStep,
         vCoins: +VC.toFixed(8),
         vValue: +VV.toFixed(2),
         rrRatio: RR,
@@ -418,7 +478,10 @@ export function calculateReport({
         // Дополнительные метрики
         riskToDepositRatio: +((RV / D) * 100).toFixed(2),
         positionToDepositRatio: +((VV / D) * 100).toFixed(2),
-        calculatedAt: now.toISOString()
+        calculatedAt: now.toISOString(),
+        // Метрики с шагом цены
+        slDistanceTicks: calculatedPriceStep > 0 ? +(Math.abs(calculatedEntryPrice - SL) / calculatedPriceStep).toFixed(0) : null,
+        priceStepUsed: calculatedPriceStep
     };
 
     return reportData;
@@ -435,33 +498,57 @@ export function calculateRiskAmount(deposit, riskPercent) {
     return +(D * (R / 100)).toFixed(2);
 }
 
-export function calculatePositionSize(entryPrice, slPrice, riskAmount) {
+export function calculatePositionSize(entryPrice, slPrice, riskAmount, priceStep = 0.01) {
     const EP = parseFloat(entryPrice);
     const SL = parseFloat(slPrice);
     const RA = parseFloat(riskAmount);
+    const PS = parseFloat(priceStep);
 
     if (isNaN(EP) || EP <= 0) return 0;
     if (isNaN(SL) || SL <= 0) return 0;
     if (isNaN(RA) || RA <= 0) return 0;
+    if (isNaN(PS) || PS <= 0) return 0;
 
     const priceDiff = Math.abs(EP - SL);
     if (priceDiff <= 0) return 0;
 
-    return +(RA / priceDiff).toFixed(8);
+    // Количество пунктов
+    const points = priceDiff / PS;
+
+    // Объем на пункт
+    const volumePerPoint = RA / points;
+
+    return +volumePerPoint.toFixed(8);
 }
 
-export function calculateProfit(entryPrice, exitPrice, positionSize, direction) {
+export function calculateProfit(entryPrice, exitPrice, positionSize, direction, priceStep = 0.01) {
     const EP = parseFloat(entryPrice);
     const XP = parseFloat(exitPrice);
     const PS = parseFloat(positionSize);
+    const TS = parseFloat(priceStep);
 
     if (isNaN(EP) || isNaN(XP) || isNaN(PS)) return 0;
 
+    let profit = 0;
+
     if (direction === 'long') {
-        return +((XP - EP) * PS).toFixed(2);
+        const points = (XP - EP) / TS;
+        profit = points * PS * TS;
     } else if (direction === 'short') {
-        return +((EP - XP) * PS).toFixed(2);
+        const points = (EP - XP) / TS;
+        profit = points * PS * TS;
     }
 
-    return 0;
+    return +profit.toFixed(2);
+}
+
+// Функция для расчета количества пунктов между ценами
+export function calculatePointsBetweenPrices(price1, price2, priceStep) {
+    const p1 = parseFloat(price1);
+    const p2 = parseFloat(price2);
+    const step = parseFloat(priceStep);
+
+    if (isNaN(p1) || isNaN(p2) || isNaN(step) || step <= 0) return 0;
+
+    return Math.abs(p1 - p2) / step;
 }
