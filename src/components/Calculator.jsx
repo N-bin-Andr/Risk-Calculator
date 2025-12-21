@@ -6,6 +6,7 @@ import { useInstrumentHistory } from '../hooks/useInstrumentHistory';
 import { calculatorReducer, initialState } from '../reducers/calculatorReducer';
 import { validateFields } from '../utils/validateCalculator';
 import { calculateReport, getDirectionLabel } from '../utils/calculateReport';
+import InstrumentSettingsDialog from './InstrumentSettingsDialog';
 
 const Calculator = () => {
     // Восстановление состояния из localStorage
@@ -25,10 +26,13 @@ const Calculator = () => {
         { ...initialState, ...(savedState || {}) }
     );
 
-    // Хук истории инструментов (только для добавления инструментов и подсказок)
+    // Хук истории инструментов
     const {
         getSuggestions,
-        addInstrument
+        addInstrument,
+        getInstrument,
+        updateInstrumentPriceStep,
+        getDefaultPriceStep
     } = useInstrumentHistory();
 
     // Локальные состояния
@@ -38,9 +42,15 @@ const Calculator = () => {
     const [instrumentSuggestions, setInstrumentSuggestions] = useState([]);
     const [showReport, setShowReport] = useState(false);
     const [reportData, setReportData] = useState(null);
+    const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+    const [selectedInstrument, setSelectedInstrument] = useState('');
+    const [currentPriceStep, setCurrentPriceStep] = useState(null);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [suggestionIndex, setSuggestionIndex] = useState(-1);
 
     // Refs
     const reportRef = useRef();
+    const instrumentInputRef = useRef();
 
     // Вспомогательные переменные
     const isDirectionChosen = state.direction === 'long' || state.direction === 'short';
@@ -104,9 +114,149 @@ const Calculator = () => {
 
     // Обновление подсказок инструментов
     useEffect(() => {
+        if (state.instrument.trim() === '') {
+            setInstrumentSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+
         const suggestions = getSuggestions(state.instrument);
         setInstrumentSuggestions(suggestions);
+
+        if (suggestions.length > 0 && state.instrument.length >= 2) {
+            setShowSuggestions(true);
+        } else {
+            setShowSuggestions(false);
+        }
     }, [state.instrument, getSuggestions]);
+
+    // Обработчик выбора инструмента из подсказок
+    const handleInstrumentSelect = (instrument) => {
+        dispatch({ type: 'SET_FIELD', field: 'instrument', value: instrument.name });
+
+        // Получаем информацию об инструменте
+        const instrumentData = getInstrument(instrument.name);
+        if (instrumentData && instrumentData.priceStep !== null && instrumentData.priceStep !== undefined) {
+            setCurrentPriceStep(instrumentData.priceStep);
+        } else {
+            setCurrentPriceStep(null);
+        }
+
+        setShowSuggestions(false);
+        setSuggestionIndex(-1);
+    };
+
+    // Обработчик нажатия клавиш в поле инструмента
+    const handleInstrumentKeyDown = (e) => {
+        if (!showSuggestions || instrumentSuggestions.length === 0) return;
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setSuggestionIndex(prev =>
+                    prev < instrumentSuggestions.length - 1 ? prev + 1 : 0
+                );
+                break;
+
+            case 'ArrowUp':
+                e.preventDefault();
+                setSuggestionIndex(prev =>
+                    prev > 0 ? prev - 1 : instrumentSuggestions.length - 1
+                );
+                break;
+
+            case 'Enter':
+                e.preventDefault();
+                if (suggestionIndex >= 0 && suggestionIndex < instrumentSuggestions.length) {
+                    handleInstrumentSelect(instrumentSuggestions[suggestionIndex]);
+                }
+                break;
+
+            case 'Escape':
+                setShowSuggestions(false);
+                setSuggestionIndex(-1);
+                break;
+        }
+    };
+
+    // Обработчик изменения инструмента
+    const handleInstrumentChange = (e) => {
+        const value = e.target.value;
+        dispatch({ type: 'SET_FIELD', field: 'instrument', value: value });
+
+        if (value.trim() === '') {
+            setCurrentPriceStep(null);
+        }
+    };
+
+    // Обработчик потери фокуса с поля инструмента
+    const handleInstrumentBlur = () => {
+        setTimeout(() => {
+            setShowSuggestions(false);
+            setSuggestionIndex(-1);
+        }, 200);
+
+        // Если инструмент не пустой и не выбран из списка, проверяем наличие
+        if (state.instrument.trim() !== '') {
+            const instrumentData = getInstrument(state.instrument);
+            if (!instrumentData) {
+                // Новый инструмент - показываем диалог настроек
+                setSelectedInstrument(state.instrument);
+                setCurrentPriceStep(null);
+                setShowSettingsDialog(true);
+            } else if (instrumentData.priceStep === null || instrumentData.priceStep === undefined) {
+                // Инструмент есть, но нет шага цены - предлагаем настроить
+                setSelectedInstrument(state.instrument);
+                setCurrentPriceStep(null);
+                setShowSettingsDialog(true);
+            } else {
+                setCurrentPriceStep(instrumentData.priceStep);
+            }
+        }
+    };
+
+    // Обработчик клика по кнопке настроек инструмента
+    const handleInstrumentSettingsClick = () => {
+        if (state.instrument.trim() === '') {
+            alert('Сначала введите инструмент');
+            return;
+        }
+
+        setSelectedInstrument(state.instrument);
+
+        const instrumentData = getInstrument(state.instrument);
+        if (instrumentData && instrumentData.priceStep !== null && instrumentData.priceStep !== undefined) {
+            setCurrentPriceStep(instrumentData.priceStep);
+        } else {
+            setCurrentPriceStep(null);
+        }
+
+        setShowSettingsDialog(true);
+    };
+
+    // Обработчик сохранения настроек инструмента
+    const handleSaveInstrumentSettings = (instrumentName, priceStep) => {
+        // Добавляем или обновляем инструмент
+        const result = addInstrument(instrumentName, priceStep);
+
+        if (result === 'added' || result === 'updated') {
+            // Если это текущий выбранный инструмент, обновляем текущий шаг
+            if (instrumentName === state.instrument) {
+                setCurrentPriceStep(priceStep);
+            }
+
+            // Обновляем подсказки
+            const suggestions = getSuggestions(state.instrument);
+            setInstrumentSuggestions(suggestions);
+        }
+
+        setShowSettingsDialog(false);
+    };
+
+    // Обработчик отмены настроек инструмента
+    const handleCancelInstrumentSettings = () => {
+        setShowSettingsDialog(false);
+    };
 
     // Валидация SL и TP
     useEffect(() => {
@@ -234,6 +384,13 @@ const Calculator = () => {
             return;
         }
 
+        // Получаем шаг цены для инструмента
+        let priceStepForCalculation = currentPriceStep;
+        if (priceStepForCalculation === null || priceStepForCalculation === undefined) {
+            // Если шаг цены не установлен, используем значение по умолчанию
+            priceStepForCalculation = getDefaultPriceStep(state.instrument);
+        }
+
         // Генерация reportId
         const now = new Date();
         const day = String(now.getDate()).padStart(2, '0');
@@ -260,7 +417,9 @@ const Calculator = () => {
                     if (val === '' || val === undefined || val === null) return 0;
                     const num = parseFloat(val);
                     return isNaN(num) ? 0 : num;
-                })
+                }),
+                // Передаем шаг цены для расчета
+                priceStep: priceStepForCalculation
             });
 
             setReportData(report);
@@ -287,9 +446,9 @@ const Calculator = () => {
                 dispatch({ type: 'RESET_GRID_CALCULATION' });
             }
 
-            // Добавляем инструмент в историю
+            // Добавляем инструмент в историю (если его нет)
             if (state.instrument && state.instrument.trim() !== '') {
-                addInstrument(state.instrument);
+                addInstrument(state.instrument, priceStepForCalculation);
             }
 
             // Отправка в Notion
@@ -301,6 +460,7 @@ const Calculator = () => {
                     status,
                     reportId,
                     date,
+                    priceStep: priceStepForCalculation,
                     // Добавляем результаты расчета для сетки
                     ...(state.gridEnabled && report.gridReport ? {
                         gridPrices: report.gridReport.gridPrices,
@@ -356,6 +516,9 @@ const Calculator = () => {
         setStatus('Запланирован');
         setReportData(null);
         setShowReport(false);
+        setCurrentPriceStep(null);
+        setShowSuggestions(false);
+        setSuggestionIndex(-1);
 
         // Очищаем localStorage для депозита и риска
         localStorage.removeItem('lastDeposit');
@@ -371,12 +534,32 @@ const Calculator = () => {
         <div className="calculator">
             <h2>Расчёт параметров ордера</h2>
 
+            {/* Информация о текущем шаге цены */}
+            {state.instrument && currentPriceStep !== null && (
+                <div className="calculator-header-note">
+                    <p>
+                        📏 <strong>Шаг цены для {state.instrument}:</strong> {currentPriceStep} USDT
+                        <button
+                            className="btn-settings"
+                            onClick={handleInstrumentSettingsClick}
+                            style={{ marginLeft: '10px' }}
+                        >
+                            ⚙️ Изменить
+                        </button>
+                    </p>
+                </div>
+            )}
+
             {/* Ссылка на историю инструментов */}
             <div className="calculator-header-note">
                 <p>
                     💡 <strong>Инструменты сохраняются автоматически.</strong>
                     Для просмотра и управления историей инструментов перейдите в раздел
-                    <span className="link-to-history" onClick={() => window.location.hash = '#instruments'}>
+                    <span
+                        className="link-to-history"
+                        onClick={() => window.location.hash = '#instruments'}
+                        style={{ marginLeft: '5px' }}
+                    >
                         📚 История инструментов
                     </span>
                 </p>
@@ -410,25 +593,76 @@ const Calculator = () => {
                                 <option value="long">Покупка (Long)</option>
                                 <option value="short">Продажа (Short)</option>
                             </select>
-                            <div className="inline-field">
+
+                            <div className="inline-field autosuggest-container">
                                 <label>Инструмент:</label>
-                                <input
-                                    type="text"
-                                    value={state.instrument}
-                                    onChange={e =>
-                                        dispatch({ type: 'SET_FIELD', field: 'instrument', value: e.target.value })
-                                    }
-                                    list="instrument-options"
-                                    autoComplete="off"
-                                    placeholder="Например: BTCUSDT"
-                                />
+                                <div style={{ position: 'relative', width: '160px' }}>
+                                    <input
+                                        ref={instrumentInputRef}
+                                        type="text"
+                                        value={state.instrument}
+                                        onChange={handleInstrumentChange}
+                                        onKeyDown={handleInstrumentKeyDown}
+                                        onFocus={() => {
+                                            if (state.instrument.length >= 2 && instrumentSuggestions.length > 0) {
+                                                setShowSuggestions(true);
+                                            }
+                                        }}
+                                        onBlur={handleInstrumentBlur}
+                                        list="instrument-options"
+                                        autoComplete="off"
+                                        placeholder="Например: BTCUSDT"
+                                        style={{ width: '100%' }}
+                                    />
+                                    {state.instrument.trim() !== '' && (
+                                        <button
+                                            type="button"
+                                            className="btn-settings"
+                                            onClick={handleInstrumentSettingsClick}
+                                            style={{
+                                                position: 'absolute',
+                                                right: '5px',
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                padding: '2px 6px',
+                                                fontSize: '10px'
+                                            }}
+                                            title="Настроить шаг цены"
+                                        >
+                                            ⚙️
+                                        </button>
+                                    )}
+                                </div>
                             </div>
+
+                            {/* Выпадающий список подсказок */}
+                            {showSuggestions && instrumentSuggestions.length > 0 && (
+                                <div className="suggestion-list">
+                                    {instrumentSuggestions.map((suggestion, index) => (
+                                        <div
+                                            key={suggestion.name}
+                                            className={`suggestion-item ${index === suggestionIndex ? 'selected' : ''}`}
+                                            onClick={() => handleInstrumentSelect(suggestion)}
+                                            onMouseEnter={() => setSuggestionIndex(index)}
+                                        >
+                                            <span className="suggestion-name">{suggestion.name}</span>
+                                            <div className="suggestion-info">
+                                                <span className="suggestion-count">{suggestion.count} раз</span>
+                                                {suggestion.priceStep && (
+                                                    <span className="suggestion-step">{suggestion.priceStep}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
 
                             <datalist id="instrument-options">
                                 {instrumentSuggestions.map((item, index) => (
-                                    <option key={index} value={item} />
+                                    <option key={index} value={item.name} />
                                 ))}
                             </datalist>
+
                             <div className="inline-field">
                                 <label>Депозит (USDT):</label>
                                 <input
@@ -739,6 +973,16 @@ const Calculator = () => {
                 <fieldset className="report-section">
                     <legend>📊 Результаты расчёта</legend>
                     <div className="results">
+                        {/* Информация о шаге цены в результатах */}
+                        {state.instrument && (
+                            <div className="price-step-info">
+                                <p>
+                                    <strong>Шаг цены для {state.instrument}:</strong>
+                                    {currentPriceStep !== null ? ` ${currentPriceStep} USDT` : ' используется значение по умолчанию'}
+                                </p>
+                            </div>
+                        )}
+
                         {/* РЕЖИМ ОДИН ОРДЕР */}
                         {!state.gridEnabled && (
                             <>
@@ -846,6 +1090,16 @@ const Calculator = () => {
                 </div>
             )}
 
+            {/* Диалог настроек инструмента */}
+            <InstrumentSettingsDialog
+                isOpen={showSettingsDialog}
+                onClose={() => setShowSettingsDialog(false)}
+                instrumentName={selectedInstrument}
+                currentPriceStep={currentPriceStep}
+                onSave={handleSaveInstrumentSettings}
+                onCancel={handleCancelInstrumentSettings}
+            />
+
             {/* Отчет для экспорта */}
             {showReport && (
                 <div ref={reportRef} className="report-container" style={{
@@ -857,11 +1111,17 @@ const Calculator = () => {
                     <div className="report-content">
                         <h3 className="report-section-title">📝 Комментарий трейдера</h3>
                         <p className="report-comment">{state.traderNote || 'Рассматриваю сделку:'}</p>
+
                         <h3 className="report-section-title">
                             <i className="fas fa-wrench" style={{ marginRight: '8px' }}></i>
                             Инструмент
                         </h3>
                         <p><strong></strong> {state.instrument}</p>
+
+                        {currentPriceStep !== null && (
+                            <p><strong>Шаг цены:</strong> {currentPriceStep} USDT</p>
+                        )}
+
                         <h3 className="report-section-title">📄 Ордер</h3>
                         <p><strong>ID:</strong> {state.reportId}</p>
                         <p><strong>Депозит на сделку:</strong> {deposit} USDT</p>
