@@ -36,8 +36,8 @@ const Calculator = () => {
     } = useInstrumentHistory();
 
     // Локальные состояния
-    const [deposit, setDeposit] = useState(() => localStorage.getItem('lastDeposit') || '');
-    const [riskSize, setRiskSize] = useState(() => localStorage.getItem('lastRiskSize') || '');
+    const [deposit, setDeposit] = useState(() => localStorage.getItem('savedDeposit') || '');
+    const [riskSize, setRiskSize] = useState(() => localStorage.getItem('savedRiskSize') || '');
     const [status, setStatus] = useState(() => localStorage.getItem('lastStatus') || 'Запланирован');
     const [instrumentSuggestions, setInstrumentSuggestions] = useState([]);
     const [showReport, setShowReport] = useState(false);
@@ -47,14 +47,76 @@ const Calculator = () => {
     const [currentPriceStep, setCurrentPriceStep] = useState(null);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [suggestionIndex, setSuggestionIndex] = useState(-1);
+    const [isSendingToNotion, setIsSendingToNotion] = useState(false);
+    const [notionStatus, setNotionStatus] = useState('');
 
     // Refs
     const reportRef = useRef();
     const instrumentInputRef = useRef();
+    const suggestionRef = useRef();
 
     // Вспомогательные переменные
     const isDirectionChosen = state.direction === 'long' || state.direction === 'short';
     const tooltipText = 'Сначала выберите направление сделки';
+
+    // Закрытие подсказок при клике вне поля
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (suggestionRef.current &&
+                !suggestionRef.current.contains(event.target) &&
+                instrumentInputRef.current &&
+                !instrumentInputRef.current.contains(event.target)) {
+                setShowSuggestions(false);
+                setSuggestionIndex(-1);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    // Инициализация из localStorage
+    useEffect(() => {
+        const savedDeposit = localStorage.getItem('savedDeposit');
+        const savedRiskSize = localStorage.getItem('savedRiskSize');
+        const savedStatus = localStorage.getItem('lastStatus');
+
+        if (savedDeposit) {
+            setDeposit(savedDeposit);
+            dispatch({ type: 'SET_FIELD', field: 'deposit', value: savedDeposit });
+        }
+
+        if (savedRiskSize) {
+            setRiskSize(savedRiskSize);
+            dispatch({ type: 'SET_FIELD', field: 'riskSize', value: savedRiskSize });
+        }
+
+        if (savedStatus) {
+            setStatus(savedStatus);
+        } else {
+            localStorage.setItem('lastStatus', 'Запланирован');
+        }
+    }, []);
+
+    // Сохранение депозита при изменении
+    useEffect(() => {
+        if (deposit !== '') {
+            localStorage.setItem('lastDeposit', deposit);
+            localStorage.setItem('savedDeposit', deposit);
+            dispatch({ type: 'SET_FIELD', field: 'deposit', value: deposit });
+        }
+    }, [deposit]);
+
+    // Сохранение риска при изменении
+    useEffect(() => {
+        if (riskSize !== '') {
+            localStorage.setItem('lastRiskSize', riskSize);
+            localStorage.setItem('savedRiskSize', riskSize);
+            dispatch({ type: 'SET_FIELD', field: 'riskSize', value: riskSize });
+        }
+    }, [riskSize]);
 
     // Функция для расчета последнего поля распределения сетки
     const calculateLastGridField = useCallback((distribution) => {
@@ -86,19 +148,15 @@ const Calculator = () => {
         // Последнее поле всегда заблокировано (рассчитывается автоматически)
         if (index === state.gridOrdersCount - 1) return false;
 
-        // Проверяем, заполнены ли все предыдущие поля
-        for (let i = 0; i < index; i++) {
-            const val = state.gridDistribution[i];
-            if (val === '' || val === undefined || val === null) {
-                return false;
-            }
-            const numVal = parseFloat(val);
-            if (isNaN(numVal) || numVal <= 0) {
-                return false;
-            }
+        // Проверяем только предыдущее поле
+        const prevVal = state.gridDistribution[index - 1];
+        if (prevVal === '' || prevVal === undefined || prevVal === null) {
+            return false;
         }
 
-        return true;
+        const numVal = parseFloat(prevVal);
+        return !isNaN(numVal) && numVal > 0;
+
     }, [state.gridEnabled, state.gridDistribution, state.gridOrdersCount, isDirectionChosen]);
 
     // Функция для получения текста плейсхолдера
@@ -109,8 +167,35 @@ const Calculator = () => {
         if (index === 0) {
             return "Введите % (напр. 60)";
         }
-        return "Заполните предыдущее поле";
-    }, [state.gridOrdersCount]);
+
+        // Проверяем, доступно ли поле для ввода
+        if (isGridFieldEnabled(index)) {
+            return "Введите %";
+        } else {
+            return "Заполните предыдущее поле";
+        }
+    }, [state.gridOrdersCount, isGridFieldEnabled]);
+
+    // Автоматический расчет последнего поля распределения при изменении распределения
+    useEffect(() => {
+        if (state.gridEnabled && state.gridDistribution && state.gridDistribution.length > 0) {
+            const lastIndex = state.gridOrdersCount - 1;
+            const lastValue = state.gridDistribution[lastIndex];
+
+            // Если последнее поле не заполнено, рассчитываем его
+            if (lastValue === '' || lastValue === undefined || lastValue === null) {
+                const updatedDistribution = calculateLastGridField(state.gridDistribution);
+                if (updatedDistribution[lastIndex] !== state.gridDistribution[lastIndex]) {
+                    dispatch({
+                        type: 'UPDATE_GRID_DISTRIBUTION',
+                        index: lastIndex,
+                        value: updatedDistribution[lastIndex],
+                        fullDistribution: updatedDistribution
+                    });
+                }
+            }
+        }
+    }, [state.gridEnabled, state.gridDistribution, state.gridOrdersCount, calculateLastGridField]);
 
     // Обновление подсказок инструментов
     useEffect(() => {
@@ -123,11 +208,7 @@ const Calculator = () => {
         const suggestions = getSuggestions(state.instrument);
         setInstrumentSuggestions(suggestions);
 
-        if (suggestions.length > 0 && state.instrument.length >= 2) {
-            setShowSuggestions(true);
-        } else {
-            setShowSuggestions(false);
-        }
+        setShowSuggestions(false); // Всегда скрываем выпадающий список
     }, [state.instrument, getSuggestions]);
 
     // Обработчик выбора инструмента из подсказок
@@ -148,35 +229,7 @@ const Calculator = () => {
 
     // Обработчик нажатия клавиш в поле инструмента
     const handleInstrumentKeyDown = (e) => {
-        if (!showSuggestions || instrumentSuggestions.length === 0) return;
-
-        switch (e.key) {
-            case 'ArrowDown':
-                e.preventDefault();
-                setSuggestionIndex(prev =>
-                    prev < instrumentSuggestions.length - 1 ? prev + 1 : 0
-                );
-                break;
-
-            case 'ArrowUp':
-                e.preventDefault();
-                setSuggestionIndex(prev =>
-                    prev > 0 ? prev - 1 : instrumentSuggestions.length - 1
-                );
-                break;
-
-            case 'Enter':
-                e.preventDefault();
-                if (suggestionIndex >= 0 && suggestionIndex < instrumentSuggestions.length) {
-                    handleInstrumentSelect(instrumentSuggestions[suggestionIndex]);
-                }
-                break;
-
-            case 'Escape':
-                setShowSuggestions(false);
-                setSuggestionIndex(-1);
-                break;
-        }
+        // УБИРАЕМ обработку клавиш для выпадающего списка, так как его больше нет
     };
 
     // Обработчик изменения инструмента
@@ -316,63 +369,9 @@ const Calculator = () => {
         });
     }, [state.entryPrice, state.slPrice, state.direction, state.tpLevels]);
 
-    // Инициализация из localStorage
-    useEffect(() => {
-        const savedDeposit = localStorage.getItem('savedDeposit');
-        const savedRiskSize = localStorage.getItem('savedRiskSize');
-
-        if (savedDeposit) setDeposit(savedDeposit);
-        if (savedRiskSize) setRiskSize(savedRiskSize);
-
-        // Сохраняем депозит и риск в глобальное состояние
-        dispatch({ type: 'SET_FIELD', field: 'deposit', value: savedDeposit || '' });
-        dispatch({ type: 'SET_FIELD', field: 'riskSize', value: savedRiskSize || '' });
-
-        // Сохраняем статус в localStorage если еще нет
-        if (!localStorage.getItem('lastStatus')) {
-            localStorage.setItem('lastStatus', 'Запланирован');
-        }
-    }, []);
-
-    // Сохранение в localStorage при изменении
-    useEffect(() => {
-        if (deposit) {
-            localStorage.setItem('lastDeposit', deposit);
-            localStorage.setItem('savedDeposit', deposit);
-            dispatch({ type: 'SET_FIELD', field: 'deposit', value: deposit });
-        }
-    }, [deposit]);
-
-    useEffect(() => {
-        if (riskSize) {
-            localStorage.setItem('lastRiskSize', riskSize);
-            localStorage.setItem('savedRiskSize', riskSize);
-            dispatch({ type: 'SET_FIELD', field: 'riskSize', value: riskSize });
-        }
-    }, [riskSize]);
-
-    // Автоматический расчет последнего поля распределения при изменении распределения
-    useEffect(() => {
-        if (state.gridEnabled && state.gridDistribution && state.gridDistribution.length > 0) {
-            const lastIndex = state.gridOrdersCount - 1;
-            const lastValue = state.gridDistribution[lastIndex];
-
-            // Если последнее поле не заполнено, рассчитываем его
-            if (lastValue === '' || lastValue === undefined || lastValue === null) {
-                const updatedDistribution = calculateLastGridField(state.gridDistribution);
-                if (updatedDistribution[lastIndex] !== state.gridDistribution[lastIndex]) {
-                    dispatch({
-                        type: 'UPDATE_GRID_DISTRIBUTION',
-                        index: lastIndex,
-                        value: updatedDistribution[lastIndex],
-                        fullDistribution: updatedDistribution
-                    });
-                }
-            }
-        }
-    }, [state.gridEnabled, state.gridDistribution, state.gridOrdersCount, calculateLastGridField]);
-
+    // Основная функция расчета
     const calculate = async () => {
+        setNotionStatus(''); // Сбрасываем статус Notion
         const errors = validateFields(state);
 
         dispatch({ type: 'SET_FIELD', field: 'tpError', value: errors.tpError || '' });
@@ -430,7 +429,6 @@ const Calculator = () => {
             dispatch({ type: 'SET_FIELD', field: 'vValue', value: report.vValue });
             dispatch({ type: 'SET_FIELD', field: 'riskValue', value: report.riskValue });
             dispatch({ type: 'SET_FIELD', field: 'rrRatio', value: report.rrRatio });
-            dispatch({ type: 'SET_FIELD', field: 'showReport', value: true });
 
             // Сохраняем результаты расчета сетки
             if (state.gridEnabled && report.gridReport) {
@@ -451,33 +449,76 @@ const Calculator = () => {
                 addInstrument(state.instrument, priceStepForCalculation);
             }
 
-            // Отправка в Notion
-            await sendReportToNotion(
-                {
-                    ...state,
-                    deposit,
-                    riskSize,
-                    status,
-                    reportId,
-                    date,
-                    priceStep: priceStepForCalculation,
-                    // Добавляем результаты расчета для сетки
-                    ...(state.gridEnabled && report.gridReport ? {
-                        gridPrices: report.gridReport.gridPrices,
-                        gridQuantities: report.gridReport.gridQuantities,
-                        gridAveragePrice: report.gridReport.gridAveragePrice,
-                        gridTotalQuantity: report.gridReport.gridTotalQuantity,
-                        gridInvestment: report.gridReport.gridInvestment
-                    } : {})
-                },
-                state.isBacktest,
-                process.env.REACT_APP_NOTION_TOKEN,
-                process.env.REACT_APP_NOTION_DATABASE_ID
-            );
+            alert('✅ Расчет успешно выполнен! Теперь вы можете отправить отчет в Notion с помощью соответствующей кнопки.');
 
         } catch (error) {
             console.error('Ошибка расчета:', error);
             alert(`Ошибка: ${error.message}`);
+        }
+    };
+
+    // Функция отправки отчета в Notion
+    const sendToNotion = async () => {
+        if (!reportData) {
+            alert('Сначала выполните расчет с помощью кнопки "Рассчитать"');
+            return;
+        }
+
+        setIsSendingToNotion(true);
+        setNotionStatus('Отправка...');
+
+        try {
+            // Проверяем наличие Notion конфигурации
+            if (!process.env.REACT_APP_NOTION_TOKEN ||
+                (!process.env.REACT_APP_NOTION_DATABASE_ID && !process.env.REACT_APP_NOTION_BACKTEST_DB)) {
+                setNotionStatus('❌ Notion не настроен');
+                alert('Notion не настроен. Пожалуйста, настройте переменные окружения REACT_APP_NOTION_TOKEN, REACT_APP_NOTION_DATABASE_ID и REACT_APP_NOTION_BACKTEST_DB');
+                return;
+            }
+
+            // Подготавливаем данные для отправки
+            const notionReportData = {
+                ...reportData,
+                instrument: state.instrument,
+                direction: state.direction,
+                traderNote: state.traderNote,
+                status,
+                reportId: state.reportId,
+                date: state.date || new Date().toLocaleDateString('ru-RU'),
+                deposit: parseFloat(deposit) || 0,
+                riskSize: parseFloat(riskSize) || 0,
+                priceStep: currentPriceStep
+            };
+
+            // Определяем databaseId в зависимости от типа сделки
+            let databaseId;
+            if (state.isBacktest && process.env.REACT_APP_NOTION_BACKTEST_DB) {
+                databaseId = process.env.REACT_APP_NOTION_BACKTEST_DB;
+            } else if (!state.isBacktest && process.env.REACT_APP_NOTION_DATABASE_ID) {
+                databaseId = process.env.REACT_APP_NOTION_DATABASE_ID;
+            } else {
+                databaseId = process.env.REACT_APP_NOTION_DATABASE_ID || process.env.REACT_APP_NOTION_BACKTEST_DB;
+            }
+
+            const result = await sendReportToNotion(
+                notionReportData,
+                state.isBacktest,
+                process.env.REACT_APP_NOTION_TOKEN,
+                databaseId
+            );
+
+            if (result) {
+                setNotionStatus('✅ Отправлено в Notion');
+                alert('✅ Отчет успешно отправлен в Notion!');
+            } else {
+                setNotionStatus('❌ Ошибка отправки');
+            }
+        } catch (error) {
+            console.error('Ошибка отправки в Notion:', error);
+            setNotionStatus('❌ Ошибка отправки');
+            alert(`Ошибка отправки в Notion: ${error.message}`);
+        } finally {
+            setIsSendingToNotion(false);
         }
     };
 
@@ -511,21 +552,27 @@ const Calculator = () => {
 
     const resetForm = () => {
         dispatch({ type: 'RESET_FORM' });
-        setDeposit('');
-        setRiskSize('');
+        // НЕ сбрасываем депозит и риск
         setStatus('Запланирован');
         setReportData(null);
         setShowReport(false);
         setCurrentPriceStep(null);
         setShowSuggestions(false);
         setSuggestionIndex(-1);
+        setNotionStatus('');
+        setIsSendingToNotion(false);
 
-        // Очищаем localStorage для депозита и риска
-        localStorage.removeItem('lastDeposit');
-        localStorage.removeItem('lastRiskSize');
+        // Очищаем только статус, НЕ очищаем депозит и риск
         localStorage.removeItem('lastStatus');
+    };
+
+    const resetDepositAndRisk = () => {
+        setDeposit('');
+        setRiskSize('');
         localStorage.removeItem('savedDeposit');
         localStorage.removeItem('savedRiskSize');
+        dispatch({ type: 'SET_FIELD', field: 'deposit', value: '' });
+        dispatch({ type: 'SET_FIELD', field: 'riskSize', value: '' });
     };
 
     if (!state) return <div>Загрузка калькулятора...</div>;
@@ -534,7 +581,22 @@ const Calculator = () => {
         <div className="calculator">
             <h2>Расчёт параметров ордера</h2>
 
-            {/* Информация о текущем шаге цены */}
+            {/* Ссылка на историю инструментов - ТЕПЕРЬ ПЕРВЫЙ БЛОК */}
+            <div className="calculator-header-note">
+                <p>
+                    💡 <strong>Инструменты сохраняются автоматически.</strong>
+                    Для просмотра и управления истории инструментов перейдите в раздел
+                    <span
+                        className="link-to-history"
+                        onClick={() => window.location.hash = '#instruments'}
+                        style={{ marginLeft: '5px' }}
+                    >
+                        📚 История инструментов
+                    </span>
+                </p>
+            </div>
+
+            {/* Информация о текущем шаге цены - ТЕПЕРЬ ВТОРОЙ БЛОК */}
             {state.instrument && currentPriceStep !== null && (
                 <div className="calculator-header-note">
                     <p>
@@ -549,21 +611,6 @@ const Calculator = () => {
                     </p>
                 </div>
             )}
-
-            {/* Ссылка на историю инструментов */}
-            <div className="calculator-header-note">
-                <p>
-                    💡 <strong>Инструменты сохраняются автоматически.</strong>
-                    Для просмотра и управления историей инструментов перейдите в раздел
-                    <span
-                        className="link-to-history"
-                        onClick={() => window.location.hash = '#instruments'}
-                        style={{ marginLeft: '5px' }}
-                    >
-                        📚 История инструментов
-                    </span>
-                </p>
-            </div>
 
             <form onSubmit={(e) => e.preventDefault()}>
                 <div className="inline-checkbox">
@@ -594,7 +641,7 @@ const Calculator = () => {
                                 <option value="short">Продажа (Short)</option>
                             </select>
 
-                            <div className="inline-field autosuggest-container">
+                            <div ref={suggestionRef} className="inline-field autosuggest-container">
                                 <label>Инструмент:</label>
                                 <div style={{ position: 'relative', width: '160px' }}>
                                     <input
@@ -604,9 +651,7 @@ const Calculator = () => {
                                         onChange={handleInstrumentChange}
                                         onKeyDown={handleInstrumentKeyDown}
                                         onFocus={() => {
-                                            if (state.instrument.length >= 2 && instrumentSuggestions.length > 0) {
-                                                setShowSuggestions(true);
-                                            }
+                                            // УБИРАЕМ отображение подсказок при фокусе
                                         }}
                                         onBlur={handleInstrumentBlur}
                                         list="instrument-options"
@@ -635,28 +680,6 @@ const Calculator = () => {
                                 </div>
                             </div>
 
-                            {/* Выпадающий список подсказок */}
-                            {showSuggestions && instrumentSuggestions.length > 0 && (
-                                <div className="suggestion-list">
-                                    {instrumentSuggestions.map((suggestion, index) => (
-                                        <div
-                                            key={suggestion.name}
-                                            className={`suggestion-item ${index === suggestionIndex ? 'selected' : ''}`}
-                                            onClick={() => handleInstrumentSelect(suggestion)}
-                                            onMouseEnter={() => setSuggestionIndex(index)}
-                                        >
-                                            <span className="suggestion-name">{suggestion.name}</span>
-                                            <div className="suggestion-info">
-                                                <span className="suggestion-count">{suggestion.count} раз</span>
-                                                {suggestion.priceStep && (
-                                                    <span className="suggestion-step">{suggestion.priceStep}</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
                             <datalist id="instrument-options">
                                 {instrumentSuggestions.map((item, index) => (
                                     <option key={index} value={item.name} />
@@ -665,24 +688,44 @@ const Calculator = () => {
 
                             <div className="inline-field">
                                 <label>Депозит (USDT):</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={deposit}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        setDeposit(value);
-                                    }}
-                                    onBlur={() => {
-                                        if (deposit) {
-                                            localStorage.setItem('lastDeposit', deposit);
-                                            localStorage.setItem('savedDeposit', deposit);
-                                            dispatch({ type: 'SET_FIELD', field: 'deposit', value: deposit });
-                                        }
-                                    }}
-                                    placeholder="1000"
-                                />
+                                <div style={{ position: 'relative', width: '160px' }}>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={deposit}
+                                        onChange={e => {
+                                            const value = e.target.value;
+                                            setDeposit(value);
+                                        }}
+                                        onBlur={() => {
+                                            if (deposit) {
+                                                localStorage.setItem('lastDeposit', deposit);
+                                                localStorage.setItem('savedDeposit', deposit);
+                                                dispatch({ type: 'SET_FIELD', field: 'deposit', value: deposit });
+                                            }
+                                        }}
+                                        placeholder="1000"
+                                    />
+                                    {deposit && (
+                                        <span
+                                            style={{
+                                                position: 'absolute',
+                                                right: '8px',
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                fontSize: '10px',
+                                                color: '#28a745',
+                                                backgroundColor: '#d4edda',
+                                                padding: '1px 4px',
+                                                borderRadius: '3px'
+                                            }}
+                                            title="Сохранено в браузере"
+                                        >
+                                            💾
+                                        </span>
+                                    )}
+                                </div>
                             </div>
 
                             <div title={!isDirectionChosen ? tooltipText : ''} className="inline-field">
@@ -742,54 +785,57 @@ const Calculator = () => {
                                     </div>
 
                                     {/* Поля распределения процентов */}
-                                    {Array.from({ length: state.gridOrdersCount }).map((_, index) => (
-                                        <div key={index} className="inline-field">
-                                            <label>Ордер {index + 1} (%):</label>
-                                            <input
-                                                type="text"
-                                                inputMode="decimal"
-                                                value={state.gridDistribution[index] || ''}
-                                                onChange={e => {
-                                                    const inputValue = e.target.value;
+                                    {Array.from({ length: state.gridOrdersCount }).map((_, index) => {
+                                        const isEnabled = isGridFieldEnabled(index);
+                                        return (
+                                            <div key={index} className="inline-field">
+                                                <label>Ордер {index + 1} (%):</label>
+                                                <input
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    value={state.gridDistribution[index] || ''}
+                                                    onChange={e => {
+                                                        const inputValue = e.target.value;
 
-                                                    // Разрешаем только числа, точку и пустую строку
-                                                    if (inputValue === '' || /^\d*\.?\d*$/.test(inputValue)) {
-                                                        dispatch({
-                                                            type: 'UPDATE_GRID_DISTRIBUTION',
-                                                            index,
-                                                            value: inputValue
-                                                        });
-                                                    }
-                                                }}
-                                                onBlur={e => {
-                                                    // При потере фокуса нормализуем значение
-                                                    const inputValue = e.target.value;
-                                                    if (inputValue !== '') {
-                                                        const numValue = parseFloat(inputValue);
-                                                        if (!isNaN(numValue)) {
+                                                        // Разрешаем только числа, точку и пустую строку
+                                                        if (inputValue === '' || /^[0-9]*\.?[0-9]*$/.test(inputValue)) {
                                                             dispatch({
                                                                 type: 'UPDATE_GRID_DISTRIBUTION',
                                                                 index,
-                                                                value: numValue.toString()
+                                                                value: inputValue
                                                             });
                                                         }
+                                                    }}
+                                                    onBlur={e => {
+                                                        const inputValue = e.target.value;
+                                                        if (inputValue !== '') {
+                                                            const numValue = parseFloat(inputValue);
+                                                            if (!isNaN(numValue)) {
+                                                                dispatch({
+                                                                    type: 'UPDATE_GRID_DISTRIBUTION',
+                                                                    index,
+                                                                    value: numValue.toString()
+                                                                });
+                                                            }
+                                                        }
+                                                    }}
+                                                    disabled={!isEnabled}
+                                                    placeholder={getGridFieldPlaceholder(index)}
+                                                    className={
+                                                        index === state.gridOrdersCount - 1 && state.gridDistribution[index]
+                                                            ? 'auto-calculated-field'
+                                                            : ''
                                                     }
-                                                }}
-                                                disabled={!isGridFieldEnabled(index)}
-                                                placeholder={getGridFieldPlaceholder(index)}
-                                                className={
-                                                    index === state.gridOrdersCount - 1 && state.gridDistribution[index]
-                                                        ? 'auto-calculated-field'
-                                                        : ''
-                                                }
-                                                style={{
-                                                    backgroundColor: index === state.gridOrdersCount - 1 && state.gridDistribution[index]
-                                                        ? '#f0f8ff'
-                                                        : 'white'
-                                                }}
-                                            />
-                                        </div>
-                                    ))}
+                                                    style={{
+                                                        backgroundColor: index === state.gridOrdersCount - 1 && state.gridDistribution[index]
+                                                            ? '#f0f8ff'
+                                                            : isEnabled ? 'white' : '#f5f5f5',
+                                                        color: !isEnabled ? '#999' : '#000'
+                                                    }}
+                                                />
+                                            </div>
+                                        );
+                                    })}
 
                                     <div className="distribution-total">
                                         <strong>
@@ -930,25 +976,45 @@ const Calculator = () => {
 
                             <div className="inline-field">
                                 <label>Риск на сделку (%):</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    max="100"
-                                    value={riskSize}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        setRiskSize(value);
-                                    }}
-                                    onBlur={() => {
-                                        if (riskSize) {
-                                            localStorage.setItem('lastRiskSize', riskSize);
-                                            localStorage.setItem('savedRiskSize', riskSize);
-                                            dispatch({ type: 'SET_FIELD', field: 'riskSize', value: riskSize });
-                                        }
-                                    }}
-                                    placeholder="2"
-                                />
+                                <div style={{ position: 'relative', width: '160px' }}>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        max="100"
+                                        value={riskSize}
+                                        onChange={e => {
+                                            const value = e.target.value;
+                                            setRiskSize(value);
+                                        }}
+                                        onBlur={() => {
+                                            if (riskSize) {
+                                                localStorage.setItem('lastRiskSize', riskSize);
+                                                localStorage.setItem('savedRiskSize', riskSize);
+                                                dispatch({ type: 'SET_FIELD', field: 'riskSize', value: riskSize });
+                                            }
+                                        }}
+                                        placeholder="2"
+                                    />
+                                    {riskSize && (
+                                        <span
+                                            style={{
+                                                position: 'absolute',
+                                                right: '8px',
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                fontSize: '10px',
+                                                color: '#28a745',
+                                                backgroundColor: '#d4edda',
+                                                padding: '1px 4px',
+                                                borderRadius: '3px'
+                                            }}
+                                            title="Сохранено в браузере"
+                                        >
+                                            💾
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </fieldset>
                     </div>
@@ -980,6 +1046,13 @@ const Calculator = () => {
                                     <strong>Шаг цены для {state.instrument}:</strong>
                                     {currentPriceStep !== null ? ` ${currentPriceStep} USDT` : ' используется значение по умолчанию'}
                                 </p>
+                            </div>
+                        )}
+
+                        {/* Статус отправки в Notion */}
+                        {notionStatus && (
+                            <div className={`notion-status ${notionStatus.includes('✅') ? 'success' : notionStatus.includes('❌') ? 'error' : 'info'}`}>
+                                <p><strong>Notion:</strong> {notionStatus}</p>
                             </div>
                         )}
 
@@ -1051,15 +1124,28 @@ const Calculator = () => {
                             flex: 1
                         }}
                     >
-                        Рассчитать
+                        📈 Рассчитать
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={sendToNotion}
+                        disabled={!reportData || isSendingToNotion || !!state.slError || !!state.tpError || !!state.gridError}
+                        style={{
+                            backgroundColor: !reportData ? '#ccc' : '#6c757d',
+                            flex: 1,
+                            opacity: isSendingToNotion ? 0.7 : 1
+                        }}
+                    >
+                        {isSendingToNotion ? '📤 Отправка...' : '📤 Отправить в Notion'}
                     </button>
 
                     <button
                         type="button"
                         onClick={exportToImage}
-                        disabled={!state.showReport || !!state.slError || !!state.tpError || !!state.gridError}
+                        disabled={!reportData || !!state.slError || !!state.tpError || !!state.gridError}
                         style={{
-                            backgroundColor: !state.showReport ? '#ccc' : '#28a745',
+                            backgroundColor: !reportData ? '#ccc' : '#28a745',
                             flex: 1
                         }}
                     >
@@ -1068,10 +1154,22 @@ const Calculator = () => {
 
                     <button
                         type="button"
+                        onClick={resetDepositAndRisk}
+                        style={{
+                            backgroundColor: '#ff9800',
+                            flex: 0.5
+                        }}
+                        title="Сбросить только депозит и риск"
+                    >
+                        🔄 Сбросить Депозит/Риск
+                    </button>
+
+                    <button
+                        type="button"
                         onClick={resetForm}
                         style={{
                             backgroundColor: '#dc3545',
-                            flex: 1
+                            flex: 0.5
                         }}
                     >
                         🗑️ Очистить форму

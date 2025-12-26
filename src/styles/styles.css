@@ -1660,10 +1660,6 @@ label input[type="checkbox"] {
 }
 
 .suggestion-list {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
     background: white;
     border: 1px solid #ced4da;
     border-radius: 6px;
@@ -1671,7 +1667,7 @@ label input[type="checkbox"] {
     overflow-y: auto;
     z-index: 1000;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    margin-top: 2px;
+    animation: fadeInUp 0.2s ease-out;
 }
 
 .suggestion-item {
@@ -1729,10 +1725,6 @@ label input[type="checkbox"] {
 }
 
 /* Анимация появления подсказок */
-.suggestion-list {
-    animation: fadeInUp 0.2s ease-out;
-}
-
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -1742,4 +1734,193 @@ label input[type="checkbox"] {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Убедимся, что suggestion-list не перекрывает другие элементы */
+.calculator-layout {
+    position: relative;
+    z-index: 1;
+}
+
+.form-section {
+    position: relative;
+    z-index: 1;
+}
+
+/* Добавляем в конец styles.css */
+
+/* Стили для редактирования шага цены в таблице */
+.edit-price-step {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.edit-price-step input {
+    width: 100px;
+    padding: 4px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+/* Стили для информационной панели */
+.price-step-info-section {
+    margin-top: 25px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.price-step-info-section h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #1a237e;
+    font-size: 16px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: white;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.info-label {
+    font-weight: 500;
+    color: #495057;
+    font-size: 13px;
+}
+
+.info-value {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: #28a745;
+    background-color: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.info-note {
+    margin: 15px 0 0 0;
+    padding: 10px;
+    background-color: #e8f4ff;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #495057;
+    border-left: 3px solid #007bff;
+}
+
+/* Добавить в конец файла styles.css */
+
+/* Стили для статуса отправки в Notion */
+.notion-status {
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.notion-status.success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.notion-status.error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.notion-status.info {
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+}
+
+.notion-status p {
+    margin: 0;
+}
+
+/* Стили для кнопки Notion */
+.button-group button:nth-child(2) {
+    background-color: #6c757d !important;
+}
+
+.button-group button:nth-child(2):hover:not(:disabled) {
+    background-color: #5a6268 !important;
+}
+
+/* Индикатор загрузки */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+/* Информация о конфигурации Notion */
+.notion-config-info {
+    margin-top: 15px;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #6c757d;
+    font-size: 13px;
+}
+
+.notion-config-info p {
+    margin: 5px 0;
+    color: #495057;
+}
+
+.notion-config-info strong {
+    color: #343a40;
+}
+
+
+
+
+
+/* Добавить в конец файла */
+.grid-settings .inline-field input:disabled {
+    background-color: #f5f5f5 !important;
+    color: #999 !important;
+    cursor: not-allowed !important;
+    border-color: #ddd !important;
+}
+
+.grid-settings .inline-field input:enabled {
+    background-color: white;
+    border-color: #007bff;
+    cursor: text;
+}
+
+.grid-field-disabled {
+    opacity: 0.6;
+    pointer-events: none;
+    background-color: #f5f5f5;
 }

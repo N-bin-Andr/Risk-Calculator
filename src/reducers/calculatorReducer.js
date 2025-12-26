@@ -44,23 +44,32 @@ export function calculatorReducer(state, action) {
 
         case 'RESET_FORM':
             // Сохраняем только исторически важные поля
-            return {
-                ...initialState,
-                // Сохраняем историю инструментов и настройки
-                instrument: state.instrument,
-                traderNote: '',
-                // Сохраняем настройки пользователя
-                isBacktest: state.isBacktest,
-            };
+            const fieldsToKeep = action.keepFields || [];
+            const resetState = { ...initialState };
+
+            // Сохраняем указанные поля
+            fieldsToKeep.forEach(field => {
+                if (state[field] !== undefined) {
+                    resetState[field] = state[field];
+                }
+            });
+
+            // Сохраняем исторически важные поля
+            resetState.instrument = state.instrument || resetState.instrument;
+            resetState.isBacktest = state.isBacktest || resetState.isBacktest;
+            resetState.deposit = state.deposit || resetState.deposit;
+            resetState.riskSize = state.riskSize || resetState.riskSize;
+
+            return resetState;
 
         case 'RESET_FIELDS_EXCEPT':
-            const resetState = {};
+            const resetState2 = {};
             Object.keys(state).forEach(key => {
                 if (action.fieldsToKeep.includes(key)) {
-                    resetState[key] = state[key];
+                    resetState2[key] = state[key];
                 } else {
                     const initial = initialState[key];
-                    resetState[key] =
+                    resetState2[key] =
                         Array.isArray(initial) ? [...initial] :
                             typeof initial === 'number' ? 0 :
                                 typeof initial === 'boolean' ? false :
@@ -68,7 +77,7 @@ export function calculatorReducer(state, action) {
                                         '';
                 }
             });
-            return resetState;
+            return resetState2;
 
         case 'ADD_TP_LEVEL':
             if (state.tpLevels.length >= 5) {

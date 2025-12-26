@@ -4,130 +4,77 @@ import { Client } from '@notionhq/client';
 export async function sendReportToNotion(reportData, isBacktest = false, token, databaseId) {
     try {
         if (!token || !databaseId) {
-            throw new Error('❌ Notion конфигурация не задана');
+            console.error('❌ Notion конфигурация не задана');
+            throw new Error('Notion конфигурация не задана. Проверьте переменные окружения.');
         }
 
         const notion = new Client({ auth: token });
-        const reportId = 'ORD-' + Date.now();
+        const reportId = reportData.reportId || 'ORD-' + Date.now();
 
-        await notion.pages.create({
-            parent: { database_id: databaseId },
-            properties: {
-                'Name': {
-                    title: [{ text: { content: reportId } }]
-                },
-                'ID': {
-                    rich_text: [{ text: { content: reportId } }]
-                },
-                'Date': {
-                    date: { start: reportData.date }
-                },
-                'Simbol': {
-                    rich_text: [{ text: { content: reportData.instrument || '—' } }]
-                },
-                'Deposit': { number: reportData.deposit },
-                '%R': { number: reportData.riskSize },
-                'Position': {
-                    select: { name: reportData.direction === 'buy' ? 'Buy' : 'Sell' }
-                },
-                'Entry Price': { number: reportData.entryPrice },
-                'SL Price': { number: reportData.slPrice },
-                'S/L Pips': { number: reportData.slPoints },
-                'V(c)': { number: reportData.vCoins },
-                'V($)': { number: reportData.vValue },
-                '$ Risk': { number: reportData.riskValue },
-                'Max R/R': { number: reportData.rrRatio || null },
-                'Tp1 ($)': { number: reportData.takeProfitPrice || null },
-                'Comments': {
-                    rich_text: [{ text: { content: reportData.traderNote || '—' } }]
-                },
-                'Status': {
-                    select: { name: reportData.status || 'Открыта' }
+        // Подготавливаем свойства для Notion
+        const properties = {
+            'Name': {
+                title: [{ text: { content: reportId } }]
+            },
+            'ID': {
+                rich_text: [{ text: { content: reportId } }]
+            },
+            'Date': {
+                date: { start: reportData.date || new Date().toISOString().split('T')[0] }
+            },
+            'Simbol': {
+                rich_text: [{ text: { content: reportData.instrument || '—' } }]
+            },
+            'Deposit': { number: parseFloat(reportData.deposit) || 0 },
+            '%R': { number: parseFloat(reportData.riskSize) || 0 },
+            'Position': {
+                select: {
+                    name: reportData.direction === 'long' ? 'Long' :
+                          reportData.direction === 'short' ? 'Short' : '—'
                 }
+            },
+            'Entry Price': { number: parseFloat(reportData.entryPrice) || 0 },
+            'SL Price': { number: parseFloat(reportData.slPrice) || 0 },
+            'S/L Pips': { number: parseFloat(reportData.slPoints) || 0 },
+            'V(c)': { number: parseFloat(reportData.vCoins) || 0 },
+            'V($)': { number: parseFloat(reportData.vValue) || 0 },
+            '$ Risk': { number: parseFloat(reportData.riskValue) || 0 },
+            'Comments': {
+                rich_text: [{ text: { content: reportData.traderNote || '—' } }]
+            },
+            'Status': {
+                select: { name: reportData.status || 'Запланирован' }
             }
-        });
+        };
 
-        console.log('✅ Notion DB ID:', databaseId);
-        console.log('📤 Отправка отчёта:', reportData);
-        console.log('✅ Отчёт успешно добавлен в Notion');
-    } catch (error) {
-        console.error('❌ Ошибка:', error.response?.data || error.message);
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-{/*import { Client } from '@notionhq/client';
-
-const notion = new Client({ auth: process.env.REACT_APP_NOTION_TOKEN });
-const archive = JSON.parse(localStorage.getItem('reportArchive') || '[]');
-
-
-export async function sendReportToNotion(reportData, isBacktest = false) {
-    const databaseId = isBacktest
-        ? process.env.REACT_APP_NOTION_BACKTEST_DB
-        : process.env.REACT_APP_NOTION_DATABASE_ID;
-
-    try {
-        const reportId = 'ORD-' + Date.now();
-        if (!process.env.REACT_APP_NOTION_TOKEN || !databaseId) {
-            throw new Error('❌ Notion конфигурация не задана');
+        // Добавляем RR если есть
+        if (reportData.rrRatio !== null && reportData.rrRatio !== undefined) {
+            properties['Max R/R'] = { number: parseFloat(reportData.rrRatio) };
         }
 
+        // Добавляем TP если есть
+        if (reportData.takeProfitPrice !== null && reportData.takeProfitPrice !== undefined) {
+            properties['Tp1 ($)'] = { number: parseFloat(reportData.takeProfitPrice) };
+        }
+
+        // Отправляем запрос в Notion
         await notion.pages.create({
             parent: { database_id: databaseId },
-            properties: {
-                'Name': {
-                    title: [{ text: { content: reportId } }]
-                },
-                'ID': {
-                    rich_text: [{ text: { content: reportId } }]
-                },
-                'Date': {
-                    date: { start: reportData.date }
-                },
-                'Simbol': {
-                    rich_text: [{ text: { content: reportData.instrument || '—' } }]
-                },
-                'Deposit': { number: reportData.deposit },
-                '%R': { number: reportData.riskSize },
-                'Position': {
-                    select: { name: reportData.direction === 'buy' ? 'Buy' : 'Sell' }
-                },
-                'Entry Price': { number: reportData.entryPrice },
-                'SL Price': { number: reportData.slPrice },
-                'S/L Pips': { number: reportData.slPoints },
-                'V(c)': { number: reportData.vCoins },
-                'V($)': { number: reportData.vValue },
-                '$ Risk': { number: reportData.riskValue },
-                'Max R/R': { number: reportData.rrRatio || null },
-                'Tp1 ($)': { number: reportData.takeProfitPrice || null },
-                'Comments': {
-                    rich_text: [{ text: { content: reportData.traderNote || '—' } }]
-                },
-                'Status': {
-                    select: { name: reportData.status || 'Открыта' }
-                }
-            }
+            properties: properties
         });
 
-        console.log('✅ Notion DB ID:', databaseId);
-
-        console.log('📤 Отправка отчёта:', reportData);
         console.log('✅ Отчёт успешно добавлен в Notion');
-
+        return true;
     } catch (error) {
-        console.error('❌ Ошибка:', error.response?.data || error.message);
+        console.error('❌ Ошибка отправки в Notion:', error.message);
+        if (error.code === 'validation_error') {
+            throw new Error('Ошибка валидации Notion. Проверьте структуру базы данных.');
+        } else if (error.code === 'unauthorized') {
+            throw new Error('Неверный токен доступа Notion.');
+        } else if (error.code === 'object_not_found') {
+            throw new Error('База данных Notion не найдена. Проверьте database_id.');
+        } else {
+            throw new Error(`Ошибка Notion: ${error.message}`);
+        }
     }
 }
-*/}
