@@ -234,7 +234,7 @@ export const groupBy = <T extends Record<string, any>>(
  * Удаление дубликатов из массива
  */
 export const unique = <T>(array: T[]): T[] => {
-  return [...new Set(array)];
+  return Array.from(new Set(array));
 };
 
 /**
