@@ -1,5 +1,5 @@
 import React, { useState, useEffect, ReactNode } from 'react'; // ← добавляем ReactNode
-import Calculator from './components/Calculator';
+import Calculator from './components/Calculator/Calculator';
 import InstrumentHistory from './components/InstrumentHistory';
 import Settings from './components/Settings';
 import History from './components/History';

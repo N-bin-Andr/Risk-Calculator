@@ -1,17 +1,17 @@
-import React, { useMemo } from 'react';
-import { useCalculatorState } from '../hooks/useCalculatorState';
-import { useValidation } from '../hooks/useValidation';
-import { useGridCalculations } from '../hooks/useGridCalculations';
-import { CalculationService } from '../services/calculationService';
-import DirectionSelector from './Calculator/DirectionSelector';
-import InstrumentInput from './Calculator/InstrumentInput';
-import PriceInputs from './Calculator/PriceInputs';
-import GridSettingsPanel from './Calculator/GridSettingsPanel';
-import TakeProfitManager from './Calculator/TakeProfitManager';
-import RiskManagementPanel from './Calculator/RiskManagementPanel';
-import CalculationResults from './Calculator/CalculationResults';
-import ExportActions from './Calculator/ExportActions';
-import styles from '../styles/Calculator.module.css';
+import React, { useMemo } from 'react'; // Добавляем useMemo
+import { useCalculatorState } from '../../hooks/useCalculatorState';
+import { useValidation } from '../../hooks/useValidation';
+import { useGridCalculations } from '../../hooks/useGridCalculations';
+import { CalculationService } from '../../services/calculationService';
+import DirectionSelector from './DirectionSelector';
+import InstrumentInput from './InstrumentInput';
+import PriceInputs from './PriceInputs';
+import GridSettingsPanel from './GridSettingsPanel';
+import TakeProfitManager from './TakeProfitManager';
+import RiskManagementPanel from './RiskManagementPanel';
+import CalculationResults from './CalculationResults';
+import ExportActions from './ExportActions';
+import styles from '../../styles/Calculator.module.css';
 
 const Calculator: React.FC = () => {
   // Используем хук для состояния калькулятора
