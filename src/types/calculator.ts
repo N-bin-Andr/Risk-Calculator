@@ -307,7 +307,7 @@ export type CalculatorAction =
  * Результат валидации
  */
 export interface ValidationResult {
-  errors: Record<string, string>;
+  errors: Record<string, string | undefined>;
   isValid: boolean;
 }
 
@@ -334,6 +334,52 @@ export interface TakeProfitValidationParams {
   direction: Direction;
   deposit: string;
   riskSize: string;
+}
+
+// Добавляем в раздел ТИПЫ ДЛЯ ВАЛИДАЦИИ:
+
+/**
+ * Результат валидации сетки
+ */
+export interface GridValidationResult {
+  errors: ValidationErrors;
+  isValid: boolean;
+}
+
+/**
+ * Результат валидации тейк-профита
+ */
+export interface TakeProfitValidationResult {
+  errors: ValidationErrors;
+  isValid: boolean;
+  takeProfitErrors?: string[];
+}
+
+/**
+ * Ошибки валидации
+ */
+export interface ValidationErrors {
+  instrument?: string;
+  entryPrice?: string;
+  stopLossPrice?: string;
+  takeProfitPrice?: string;
+  deposit?: string;
+  riskSize?: string;
+  stopLossPercent?: string;
+  takeProfitPercent?: string;
+  riskPerTrade?: string;
+  riskReward?: string;
+  lotSize?: string;
+  takeProfitLevels?: string;
+  gridStartPrice?: string;
+  gridEndPrice?: string;
+  gridLevels?: string;
+  gridVolumeType?: string;
+  gridFirstVolume?: string;
+  gridVolumeMultiplier?: string;
+  gridStepType?: string;
+  gridStepValue?: string;
+  [key: string]: string | undefined;
 }
 
 // ==================== ТИПЫ ДЛЯ ЭКСПОРТА ====================
