@@ -10,7 +10,8 @@ import {
   ServiceOperationResult
 } from '../types/calculator';
 import { EXPORT_CONSTANTS } from '../utils/constants';
-import { formatDateTime, safeGetLocalStorage, safeSetLocalStorage } from '../utils/helpers';
+import { safeGetLocalStorage, safeSetLocalStorage } from '../utils/helpers';
+import { formatDateTime } from '../utils/formatters'; // Исправленный импорт
 
 /**
  * Сервис для экспорта данных калькулятора
