@@ -1,0 +1,37 @@
+/* src/styles/Calculator.module.css */
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.inputsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.resultsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--background-secondary);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+@media (max-width: 1024px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+}
