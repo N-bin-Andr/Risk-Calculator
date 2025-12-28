@@ -456,7 +456,6 @@ const Calculator = () => {
             alert(`Ошибка: ${error.message}`);
         }
     };
-
     // Функция отправки отчета в Notion
     const sendToNotion = async () => {
         if (!reportData) {
@@ -464,18 +463,18 @@ const Calculator = () => {
             return;
         }
 
+        // Проверяем наличие Notion конфигурации
+        if (!process.env.REACT_APP_NOTION_TOKEN ||
+            (!process.env.REACT_APP_NOTION_DATABASE_ID && !process.env.REACT_APP_NOTION_BACKTEST_DB)) {
+            setNotionStatus('❌ Notion не настроен');
+            alert('Notion не настроен. Пожалуйста, настройте переменные окружения REACT_APP_NOTION_TOKEN, REACT_APP_NOTION_DATABASE_ID и REACT_APP_NOTION_BACKTEST_DB');
+            return;
+        }
+
         setIsSendingToNotion(true);
-        setNotionStatus('Отправка...');
+        setNotionStatus('⏳ Подготовка данных...');
 
         try {
-            // Проверяем наличие Notion конфигурации
-            if (!process.env.REACT_APP_NOTION_TOKEN ||
-                (!process.env.REACT_APP_NOTION_DATABASE_ID && !process.env.REACT_APP_NOTION_BACKTEST_DB)) {
-                setNotionStatus('❌ Notion не настроен');
-                alert('Notion не настроен. Пожалуйста, настройте переменные окружения REACT_APP_NOTION_TOKEN, REACT_APP_NOTION_DATABASE_ID и REACT_APP_NOTION_BACKTEST_DB');
-                return;
-            }
-
             // Подготавливаем данные для отправки
             const notionReportData = {
                 ...reportData,
@@ -490,6 +489,8 @@ const Calculator = () => {
                 priceStep: currentPriceStep
             };
 
+            setNotionStatus('🔄 Определение базы данных...');
+
             // Определяем databaseId в зависимости от типа сделки
             let databaseId;
             if (state.isBacktest && process.env.REACT_APP_NOTION_BACKTEST_DB) {
@@ -500,6 +501,8 @@ const Calculator = () => {
                 databaseId = process.env.REACT_APP_NOTION_DATABASE_ID || process.env.REACT_APP_NOTION_BACKTEST_DB;
             }
 
+            setNotionStatus('📤 Отправка в Notion...');
+
             const result = await sendReportToNotion(
                 notionReportData,
                 state.isBacktest,
@@ -509,14 +512,28 @@ const Calculator = () => {
 
             if (result) {
                 setNotionStatus('✅ Отправлено в Notion');
-                alert('✅ Отчет успешно отправлен в Notion!');
+                // Не показываем alert при успешной отправке - статус уже виден
             } else {
                 setNotionStatus('❌ Ошибка отправки');
+                alert('❌ Произошла ошибка при отправке в Notion');
             }
         } catch (error) {
             console.error('Ошибка отправки в Notion:', error);
-            setNotionStatus('❌ Ошибка отправки');
-            alert(`Ошибка отправки в Notion: ${error.message}`);
+
+            // Более информативное сообщение об ошибке
+            let errorMessage = 'Ошибка отправки в Notion';
+            if (error.message.includes('unauthorized')) {
+                errorMessage = 'Неверный токен доступа Notion. Проверьте REACT_APP_NOTION_TOKEN';
+            } else if (error.message.includes('object_not_found')) {
+                errorMessage = 'База данных Notion не найдена. Проверьте database_id';
+            } else if (error.message.includes('validation_error')) {
+                errorMessage = 'Ошибка валидации данных. Проверьте структуру базы данных';
+            } else {
+                errorMessage = `Ошибка Notion: ${error.message}`;
+            }
+
+            setNotionStatus(`❌ ${errorMessage}`);
+            alert(`❌ ${errorMessage}`);
         } finally {
             setIsSendingToNotion(false);
         }
@@ -566,52 +583,85 @@ const Calculator = () => {
         localStorage.removeItem('lastStatus');
     };
 
-    const resetDepositAndRisk = () => {
-        setDeposit('');
-        setRiskSize('');
-        localStorage.removeItem('savedDeposit');
-        localStorage.removeItem('savedRiskSize');
-        dispatch({ type: 'SET_FIELD', field: 'deposit', value: '' });
-        dispatch({ type: 'SET_FIELD', field: 'riskSize', value: '' });
-    };
+    // В Calculator.jsx добавим useEffect для горячих клавиш
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            // Ctrl+Enter - рассчитать
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                calculate();
+            }
+
+                // Ctrl+S - отправить в Notion
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                if (reportData && !isSendingToNotion) {
+                    sendToNotion();
+                }
+            }
+
+                // Esc - закрыть подсказки
+            if (e.key === 'Escape') {
+                setShowSuggestions(false);
+                setSuggestionIndex(-1);
+            }
+            };
+
+            document.addEventListener('keydown', handleKeyDown);
+            return () => {
+                document.removeEventListener('keydown', handleKeyDown);
+            };
+    }, [calculate, sendToNotion, reportData, isSendingToNotion]);
+
 
     if (!state) return <div>Загрузка калькулятора...</div>;
 
     return (
         <div className="calculator">
-            <h2>Расчёт параметров ордера</h2>
+                <h2>Расчёт параметров ордера</h2>
 
-            {/* Ссылка на историю инструментов - ТЕПЕРЬ ПЕРВЫЙ БЛОК */}
-            <div className="calculator-header-note">
-                <p>
-                    💡 <strong>Инструменты сохраняются автоматически.</strong>
-                    Для просмотра и управления истории инструментов перейдите в раздел
-                    <span
-                        className="link-to-history"
-                        onClick={() => window.location.hash = '#instruments'}
-                        style={{ marginLeft: '5px' }}
-                    >
-                        📚 История инструментов
-                    </span>
-                </p>
-            </div>
-
-            {/* Информация о текущем шаге цены - ТЕПЕРЬ ВТОРОЙ БЛОК */}
-            {state.instrument && currentPriceStep !== null && (
-                <div className="calculator-header-note">
+                {/* Информация о горячих клавишах */}
+                <div className="calculator-header-note" style={{ backgroundColor: '#fff3cd', borderLeftColor: '#ffc107' }}>
                     <p>
-                        📏 <strong>Шаг цены для {state.instrument}:</strong> {currentPriceStep} USDT
-                        <button
-                            className="btn-settings"
-                            onClick={handleInstrumentSettingsClick}
-                            style={{ marginLeft: '10px' }}
-                        >
-                            ⚙️ Изменить
-                        </button>
+                        <strong>⚡ Горячие клавиши:</strong>
+                        <span style={{ marginLeft: '10px' }}><strong>Ctrl+Enter</strong> - Рассчитать</span>
+                        <span style={{ marginLeft: '10px' }}><strong>Ctrl+S</strong> - Отправить в Notion</span>
+                        <span style={{ marginLeft: '10px' }}><strong>Ctrl+R</strong> - Экспорт в изображение</span>
+                        <span style={{ marginLeft: '10px' }}><strong>Ctrl+G</strong> - Вкл/выкл сетку</span>
+                        <span style={{ marginLeft: '10px' }}><strong>Esc</strong> - Закрыть подсказки</span>
                     </p>
                 </div>
-            )}
 
+                {/* Ссылка на историю инструментов - ТЕПЕРЬ ВТОРОЙ БЛОК */}
+                <div className="calculator-header-note">
+                    <p>
+                        💡 <strong>Инструменты сохраняются автоматически.</strong>
+                        Для просмотра и управления истории инструментов перейдите в раздел
+                        <span
+                            className="link-to-history"
+                            onClick={() => window.location.hash = '#instruments'}
+                            style={{ marginLeft: '5px' }}
+                        >
+                            📚 История инструментов
+                        </span>
+                    </p>
+                </div>
+
+                {/* Информация о текущем шаге цены - ТЕПЕРЬ ТРЕТИЙ БЛОК */}
+                {state.instrument && currentPriceStep !== null && (
+                    <div className="calculator-header-note">
+                        <p>
+                            📏 <strong>Шаг цены для {state.instrument}:</strong> {currentPriceStep} USDT
+                            <button
+                                className="btn-settings"
+                                onClick={handleInstrumentSettingsClick}
+                                style={{ marginLeft: '10px' }}
+                            >
+                                ⚙️ Изменить
+                            </button>
+                        </p>
+                    </div>
+            )}
             <form onSubmit={(e) => e.preventDefault()}>
                 <div className="inline-checkbox">
                     <input
@@ -762,10 +812,24 @@ const Calculator = () => {
                                 </label>
                             </div>
 
+
                             {/* === НАСТРОЙКИ СЕТКИ === */}
                             {state.gridEnabled && (
                                 <fieldset className="form-section grid-settings" style={{ marginTop: '15px' }}>
                                     <legend>⚙️ Настройки сетки</legend>
+
+                                    {/* Добавим подсказку */}
+                                    <div style={{
+                                        backgroundColor: '#f0f8ff',
+                                        padding: '10px',
+                                        borderRadius: '6px',
+                                        marginBottom: '15px',
+                                        fontSize: '13px',
+                                        borderLeft: '3px solid #007bff'
+                                    }}>
+                                        <strong>💡 Подсказка:</strong> Заполняйте поля по порядку. Последнее поле рассчитывается автоматически.
+                                    </div>
+
                                     <div className="inline-field">
                                         <label>Кол-во ордеров:</label>
                                         <input
@@ -782,14 +846,38 @@ const Calculator = () => {
                                             }
                                             disabled={!isDirectionChosen}
                                         />
+                                        <span style={{
+                                            marginLeft: '10px',
+                                            fontSize: '12px',
+                                            color: '#666',
+                                            cursor: 'help'
+                                        }} title="Рекомендуется 3-5 ордеров для оптимального усреднения">
+                                            ⓘ
+                                        </span>
                                     </div>
 
                                     {/* Поля распределения процентов */}
                                     {Array.from({ length: state.gridOrdersCount }).map((_, index) => {
                                         const isEnabled = isGridFieldEnabled(index);
+                                        const isLast = index === state.gridOrdersCount - 1;
+
                                         return (
                                             <div key={index} className="inline-field">
-                                                <label>Ордер {index + 1} (%):</label>
+                                                <label>
+                                                    Ордер {index + 1} (%):
+                                                    {!isLast && isEnabled && (
+                                                        <span style={{
+                                                            marginLeft: '5px',
+                                                            fontSize: '10px',
+                                                            color: '#28a745',
+                                                            backgroundColor: '#d4edda',
+                                                            padding: '1px 4px',
+                                                            borderRadius: '3px'
+                                                        }}>
+                                                            ✓
+                                                        </span>
+                                                    )}
+                                                </label>
                                                 <input
                                                     type="text"
                                                     inputMode="decimal"
@@ -811,10 +899,12 @@ const Calculator = () => {
                                                         if (inputValue !== '') {
                                                             const numValue = parseFloat(inputValue);
                                                             if (!isNaN(numValue)) {
+                                                                // Ограничиваем значение 0-100
+                                                                const clampedValue = Math.max(0, Math.min(100, numValue));
                                                                 dispatch({
                                                                     type: 'UPDATE_GRID_DISTRIBUTION',
                                                                     index,
-                                                                    value: numValue.toString()
+                                                                    value: clampedValue.toString()
                                                                 });
                                                             }
                                                         }
@@ -822,17 +912,34 @@ const Calculator = () => {
                                                     disabled={!isEnabled}
                                                     placeholder={getGridFieldPlaceholder(index)}
                                                     className={
-                                                        index === state.gridOrdersCount - 1 && state.gridDistribution[index]
+                                                        isLast && state.gridDistribution[index]
                                                             ? 'auto-calculated-field'
                                                             : ''
                                                     }
                                                     style={{
-                                                        backgroundColor: index === state.gridOrdersCount - 1 && state.gridDistribution[index]
+                                                        backgroundColor: isLast && state.gridDistribution[index]
                                                             ? '#f0f8ff'
                                                             : isEnabled ? 'white' : '#f5f5f5',
-                                                        color: !isEnabled ? '#999' : '#000'
+                                                        color: !isEnabled ? '#999' : '#000',
+                                                        fontWeight: isLast && state.gridDistribution[index] ? 'bold' : 'normal'
                                                     }}
+                                                    title={
+                                                        isLast
+                                                            ? 'Автоматически рассчитывается как остаток до 100%'
+                                                            : isEnabled
+                                                                ? `Введите процент для ордера ${index + 1}`
+                                                                : 'Сначала заполните предыдущее поле'
+                                                    }
                                                 />
+                                                {isLast && state.gridDistribution[index] && (
+                                                    <span style={{
+                                                        marginLeft: '5px',
+                                                        color: '#007bff',
+                                                        fontSize: '12px'
+                                                    }}>
+                                                        ⚡
+                                                    </span>
+                                                )}
                                             </div>
                                         );
                                     })}
@@ -849,7 +956,90 @@ const Calculator = () => {
                                             state.gridDistribution[state.gridOrdersCount - 1].includes('Ошибка') && (
                                                 <span className="error-text"> (превышает 100%)</span>
                                             )}
+
+                                        {/* Индикатор прогресса */}
+                                        {state.gridEnabled && (
+                                            <div style={{
+                                                marginTop: '10px',
+                                                width: '100%',
+                                                backgroundColor: '#e9ecef',
+                                                borderRadius: '10px',
+                                                height: '8px',
+                                                overflow: 'hidden'
+                                            }}>
+                                                <div style={{
+                                                    width: `${Math.min(100, state.gridDistribution.reduce((sum, p) => {
+                                                        const num = parseFloat(p);
+                                                        return sum + (isNaN(num) ? 0 : num);
+                                                    }, 0))}%`,
+                                                    backgroundColor: '#28a745',
+                                                    height: '100%',
+                                                    transition: 'width 0.3s ease'
+                                                }} />
+                                            </div>
+                                        )}
                                     </div>
+
+                                    {/* Быстрые пресеты для распределения */}
+                                    {state.gridOrdersCount > 1 && (
+                                        <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '6px' }}>
+                                            <div style={{ fontSize: '13px', marginBottom: '8px', color: '#666' }}>
+                                                Быстрые настройки:
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const equalValue = (100 / state.gridOrdersCount).toFixed(1);
+                                                        const distribution = Array(state.gridOrdersCount).fill(equalValue);
+                                                        dispatch({
+                                                            type: 'SET_FIELD',
+                                                            field: 'gridDistribution',
+                                                            value: distribution
+                                                        });
+                                                    }}
+                                                    style={{
+                                                        padding: '4px 8px',
+                                                        fontSize: '12px',
+                                                        backgroundColor: '#e8f4ff',
+                                                        border: '1px solid #cce5ff',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    Равномерно
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const distribution = [];
+                                                        let remaining = 100;
+                                                        for (let i = 0; i < state.gridOrdersCount - 1; i++) {
+                                                            const value = Math.round((remaining * 0.6) / (state.gridOrdersCount - i));
+                                                            distribution.push(value.toString());
+                                                            remaining -= value;
+                                                        }
+                                                        distribution.push(remaining.toString());
+                                                        dispatch({
+                                                            type: 'SET_FIELD',
+                                                            field: 'gridDistribution',
+                                                            value: distribution
+                                                        });
+                                                    }}
+                                                    style={{
+                                                        padding: '4px 8px',
+                                                        fontSize: '12px',
+                                                        backgroundColor: '#e8f4ff',
+                                                        border: '1px solid #cce5ff',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    Убывающее
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </fieldset>
                             )}
 
@@ -1051,8 +1241,53 @@ const Calculator = () => {
 
                         {/* Статус отправки в Notion */}
                         {notionStatus && (
-                            <div className={`notion-status ${notionStatus.includes('✅') ? 'success' : notionStatus.includes('❌') ? 'error' : 'info'}`}>
-                                <p><strong>Notion:</strong> {notionStatus}</p>
+                            <div className={`notion-status ${notionStatus.includes('✅') ? 'success' : notionStatus.includes('❌') ? 'error' : 'info'}`}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    padding: '10px 15px',
+                                    borderRadius: '6px',
+                                    margin: '10px 0'
+                                }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <p style={{ margin: 0, fontWeight: 'bold' }}>
+                                        Notion: <span style={{ fontWeight: 'normal' }}>{notionStatus}</span>
+                                    </p>
+                                    {isSendingToNotion && (
+                                        <div style={{
+                                            width: '16px',
+                                            height: '16px',
+                                            border: '2px solid #f3f3f3',
+                                            borderTop: '2px solid #3498db',
+                                            borderRadius: '50%',
+                                            animation: 'spin 1s linear infinite'
+                                        }} />
+                                    )}
+                                </div>
+
+                                {/* Прогресс-бар для отправки */}
+                                {isSendingToNotion && (
+                                    <div style={{
+                                        width: '150px',
+                                        height: '6px',
+                                        backgroundColor: '#e9ecef',
+                                        borderRadius: '3px',
+                                        overflow: 'hidden',
+                                        position: 'relative'
+                                    }}>
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            height: '100%',
+                                            width: '100%',
+                                            backgroundColor: '#007bff',
+                                            animation: 'progressAnimation 2s ease-in-out infinite',
+                                            transformOrigin: 'left center'
+                                        }} />
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -1154,18 +1389,6 @@ const Calculator = () => {
 
                     <button
                         type="button"
-                        onClick={resetDepositAndRisk}
-                        style={{
-                            backgroundColor: '#ff9800',
-                            flex: 0.5
-                        }}
-                        title="Сбросить только депозит и риск"
-                    >
-                        🔄 Сбросить Депозит/Риск
-                    </button>
-
-                    <button
-                        type="button"
                         onClick={resetForm}
                         style={{
                             backgroundColor: '#dc3545',
@@ -1177,13 +1400,29 @@ const Calculator = () => {
                 </div>
             </form>
 
-            {/* Вывод ошибок */}
+            {/* Вывод ошибок - сделаем более информативным */}
             {(state.tpError || state.slError || state.gridError) && (
-                <div className="form-errors">
-                    <ul>
-                        {state.tpError && <li><span className="error-icon">⚠️</span> {state.tpError}</li>}
-                        {state.slError && <li><span className="error-icon">⚠️</span> {state.slError}</li>}
-                        {state.gridError && <li><span className="error-icon">⚠️</span> {state.gridError}</li>}
+                <div className="form-errors" style={{
+                    animation: 'slideIn 0.3s ease-out',
+                    maxHeight: '200px',
+                    overflowY: 'auto'
+                }}>
+                    <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                        {state.tpError && state.tpError.split('\n').map((error, index) => (
+                            <li key={`tp-error-${index}`} style={{ marginBottom: '5px' }}>
+                                <span className="error-icon">⚠️</span> Take Profit: {error}
+                            </li>
+                        ))}
+                        {state.slError && (
+                            <li style={{ marginBottom: '5px' }}>
+                                <span className="error-icon">⚠️</span> Stop Loss: {state.slError}
+                            </li>
+                        )}
+                        {state.gridError && state.gridError.split('\n').map((error, index) => (
+                            <li key={`grid-error-${index}`} style={{ marginBottom: '5px' }}>
+                                <span className="error-icon">⚠️</span> Сетка: {error}
+                            </li>
+                        ))}
                     </ul>
                 </div>
             )}

@@ -1924,3 +1924,45 @@ label input[type="checkbox"] {
     pointer-events: none;
     background-color: #f5f5f5;
 }
+
+/* Анимация спиннера */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Анимация прогресс-бара */
+@keyframes progressAnimation {
+    0% { transform: translateX(-100%) scaleX(0.1); }
+    50% { transform: translateX(0%) scaleX(0.5); }
+    100% { transform: translateX(100%) scaleX(0.1); }
+}
+
+/* Стили для статуса Notion */
+.notion-status {
+    transition: all 0.3s ease;
+}
+
+.notion-status.success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.notion-status.error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.notion-status.info {
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+}
+
+.notion-status.warning {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+}
