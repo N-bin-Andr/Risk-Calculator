@@ -40,6 +40,7 @@ TRADING/
 │ ├── src/
 │ │ ├── components/ # React компоненты
 │ │ │ └── Calculator.jsx # Главный компонент калькулятора
+| | | |__ InstrumentSettingsDialog.jsx
 │ │ ├── hooks/ # Кастомные React хуки
 │ │ │ └── useInstrumentHistory.js # Хук истории инструментов
 │ │ ├── reducers/ # Redux-подобные редьюсеры
@@ -50,7 +51,8 @@ TRADING/
 │ │ │ └── styles.css # Основные стили приложения
 │ │ ├── utils/ # Вспомогательные функции
 │ │ │ ├── calculateReport.js # Логика расчетов
-│ │ │ └── validateCalculator.js # Валидация полей
+│ │ │ |__gridValidation.js
+│ │ │ |__validateCalculator.js
 │ │ ├── App.jsx # Корневой компонент приложения
 │ │ ├── App.test.js # Тесты
 │ │ ├── index.js # Точка входа
@@ -58,6 +60,7 @@ TRADING/
 │ │ └── setupTests.js # Настройка тестов
 │ ├── .gitignore # Игнорируемые файлы Git
 │ ├── package.json # Зависимости и скрипты
+| |__ package-lock.json
 │ └── README.md # Эта документация
 └── README.md # Основная документация
 
