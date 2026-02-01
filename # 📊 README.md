@@ -1,306 +1,404 @@
 # 📊 Risk Calculator - Калькулятор рисков для трейдинга
 
-Профессиональный калькулятор для расчета параметров торговых позиций с поддержкой сеточного входа и управлением рисками.
+Профессиональный калькулятор для расчета параметров торговых позиций с поддержкой сеточного входа и управлением рисками. Поддерживает различные типы инструментов (Форекс, Акции, Крипто, Фьючерсы).
 
-## 🚀 Возможности
+## 🏗️ СТРУКТУРА ПРОЕКТА
 
-### 📈 Основные функции
+src/
+├── components/
+│ ├── Calculator/ # Компоненты калькулятора (будут созданы)
+│ │ ├── Calculator.jsx # Главный контейнер
+│ │ ├── InstrumentInput.jsx
+│ │ ├── GridSettingsPanel.jsx
+│ │ ├── TakeProfitManager.jsx
+│ │ ├── RiskManagementPanel.jsx
+│ │ ├── CalculationResults.jsx
+│ │ ├── ExportActions.jsx
+│ │ ├── InstrumentTypeSelector.jsx
+│ │ └── index.js
+│ │
+│ ├── InstrumentSettingsDialog/
+│ │ └── InstrumentSettingsDialog.jsx
+│ │
+│ ├── Settings.jsx
+│ ├── History.jsx
+│ ├── Templates.jsx
+│ └── Help.jsx
+│
+├── hooks/
+│ ├── useInstrumentHistory.js
+│ ├── useDebounce.js # Будет создан
+│ ├── useLocalStorage.js # Будет создан
+│ └── useCalculator.js # Будет создан
+│
+├── reducers/
+│ └── calculatorReducer.js
+│
+├── services/
+│ └── notionService.js
+│
+├── calculations/ # НОВАЯ ПАПКА - будет создана
+│ ├── index.js
+│ ├── calculators/
+│ │ ├── ForexCalculator.js
+│ │ ├── StockCalculator.js
+│ │ ├── CryptoCalculator.js
+│ │ ├── FuturesCalculator.js
+│ │ └── CFDsCalculator.js
+│ │
+│ ├── utils/
+│ │ ├── lotCalculations.js
+│ │ ├── marginCalculations.js
+│ │ ├── commissionCalculations.js
+│ │ └── riskCalculations.js
+│ │
+│ └── types/
+│ ├── instrumentTypes.js
+│ ├── forexPairs.js
+│ ├── cryptoPairs.js
+│ └── stockSymbols.js
+│
+├── utils/
+│ ├── calculateReport.js
+│ ├── validateCalculator.js
+│ ├── gridValidation.js
+│ ├── notionService.js # Будет перемещен из services/
+│ ├── formatters.js # Будет создан
+│ ├── validators.js # Будет создан
+│ └── helpers.js # Будет создан
+│
+├── styles/
+│ ├── globals.css # Будет создан из styles.css
+│ ├── components/ # Будет создана
+│ │ ├── Calculator.css
+│ │ ├── GridSettings.css
+│ │ ├── TakeProfitManager.css
+│ │ ├── RiskManagement.css
+│ │ ├── InstrumentInput.css
+│ │ └── CalculationResults.css
+│ │
+│ ├── layout/ # Будет создана
+│ │ ├── header.css
+│ │ ├── footer.css
+│ │ └── forms.css
+│ │
+│ └── themes/ # Будет создана
+│ ├── light.css
+│ └── dark.css
+│
+├── App.jsx
+├── App.test.js
+├── index.js
+├── reportWebVitals.js
+└── setupTests.js
 
-- Расчет размера позиции на основе депозита и допустимого риска
-- Управление рисками с фиксированным процентом от депозита
-- Множественные Take Profit уровни с распределением объемов
-- Валидация ценовых уровней в зависимости от направления сделки
-- История инструментов с автодополнением и сохранением
+📋 ТЕКУЩИЙ СТАТУС ПРОЕКТА
+✅ ЧТО УЖЕ СДЕЛАНО:
+ФАЗА 0: Подготовка (ЗАВЕРШЕНО)
+Создана ветка refactor/calculator-split
 
-## 🎯 Уникальные особенности
+Создан план рефакторинга (REFACTOR_PLAN.md)
 
-- Сеточный вход (Grid Entry) - вход несколькими ордерами с равномерным распределением
-- Поэтапное заполнение процентов распределения ордеров
-- Автоматический расчет последнего ордера для суммы 100%
-- Два режима работы: обычный вход и сеточный вход
-- Экспорт отчетов в изображение (JPG)
+Создана резервная копия Calculator.jsx
 
-## 📋 Поддерживаемые параметры
+Определена окончательная структура проекта
 
-- Направление сделки (Long/Short)
-- Инструмент (любой торговый инструмент)
-- Размер депозита (USDT)
-- Цена входа и Stop Loss
-- Риск на сделку (% от депозита)
-- Уровни Take Profit (цена + % объема)
-- Комментарий трейдера
-- Статус сделки
+СУЩЕСТВУЮЩИЕ ФАЙЛЫ (рабочие):
+components/Calculator.jsx - монолитный компонент (650+ строк)
 
-## 🏗️ Структура проекта
+components/InstrumentSettingsDialog.jsx - диалог настроек инструмента
 
-### 📁 Корневая структура
+hooks/useInstrumentHistory.js - хук истории инструментов
 
-TRADING/
-├── MyRiskCalculator/ # Основной проект React
-│ ├── src/
-│ │ ├── components/ # React компоненты
-│ │ │ └── Calculator.jsx # Главный компонент калькулятора
-| | | |__ InstrumentSettingsDialog.jsx
-│ │ ├── hooks/ # Кастомные React хуки
-│ │ │ └── useInstrumentHistory.js # Хук истории инструментов
-│ │ ├── reducers/ # Redux-подобные редьюсеры
-│ │ │ └── calculatorReducer.js # Управление состоянием калькулятора
-│ │ ├── services/ # Внешние сервисы
-│ │ │ └── notionService.js # Интеграция с Notion API
-│ │ ├── styles/ # Стили CSS
-│ │ │ └── styles.css # Основные стили приложения
-│ │ ├── utils/ # Вспомогательные функции
-│ │ │ ├── calculateReport.js # Логика расчетов
-│ │ │ |__gridValidation.js
-│ │ │ |__validateCalculator.js
-│ │ ├── App.jsx # Корневой компонент приложения
-│ │ ├── App.test.js # Тесты
-│ │ ├── index.js # Точка входа
-│ │ ├── reportWebVitals.js # Метрики производительности
-│ │ └── setupTests.js # Настройка тестов
-│ ├── .gitignore # Игнорируемые файлы Git
-│ ├── package.json # Зависимости и скрипты
-| |__ package-lock.json
-│ └── README.md # Эта документация
-└── README.md # Основная документация
+reducers/calculatorReducer.js - управление состоянием
 
-## 📋 Описание файлов
+services/notionService.js - интеграция с Notion API
 
-### 🎨 Компоненты
+utils/calculateReport.js - логика расчетов
 
-Файл Назначение
-Calculator.jsx Главный компонент с интерфейсом калькулятора, обработкой ввода и отображением результатов
+utils/validateCalculator.js - валидация полей
 
-### ⚙️ Логика состояния
+utils/gridValidation.js - валидация сетки
 
-## Файл Назначение
+styles/styles.css - все стили в одном файле
 
-calculatorReducer.js Управление состоянием приложения, обработка действий (actions)
-initialState Начальное состояние всех полей калькулятора
-Действия: SET_FIELD, TOGGLE_GRID, UPDATE_GRID_DISTRIBUTION и др.
+🚧 ЧТО НУЖНО СДЕЛАТЬ:
+ФАЗА 1: Разделение Calculator.jsx на компоненты (ПРИОРИТЕТ)
+Шаг 1: GridSettingsPanel.jsx
 
----
-### 🧮 Расчеты и утилиты
+Создать файл: components/Calculator/GridSettingsPanel.jsx
 
-Файл Назначение
-calculateReport.js Основная логика расчета позиций (обычный и сеточный вход)
-calculateGridReport() Расчет параметров сеточного входа
-validateCalculator.js Валидация введенных данных, проверка условий
-getDirectionLabel() Форматирование направления сделки
+Создать стили: styles/components/GridSettings.css
 
-### 🎣 Кастомные хуки
+Интегрировать в Calculator.jsx
 
-Файл Назначение
-useInstrumentHistory.js Управление историей инструментов, автодополнение, сохранение в localStorage
+Протестировать: включение/выключение сетки, распределение процентов
 
-### 🌐 Сервисы
+Шаг 2: TakeProfitManager.jsx
 
-Файл Назначение
-notionService.js Отправка отчетов в Notion базу данных
+Создать файл: components/Calculator/TakeProfitManager.jsx
 
-### 🎨 Стили
+Создать стили: styles/components/TakeProfitManager.css
 
-Файл Назначение
-styles.css Все стили приложения, адаптивный дизайн, стили сетки
+Интегрировать в Calculator.jsx
 
-### 📦 Конфигурация
+Протестировать: добавление/удаление TP уровней
 
-Файл Назначение
-package.json Зависимости, скрипты запуска и сборки
-.gitignore Игнорируемые при коммите файлы
+Шаг 3: RiskManagementPanel.jsx
 
-## 🛠️ Установка и запуск
+Создать файл: components/Calculator/RiskManagementPanel.jsx
 
-### Предварительные требования
+Создать стили: styles/components/RiskManagement.css
 
-- Node.js 14.x или выше
-- npm 6.x или выше
+Интегрировать в Calculator.jsx
 
-### Установка
+Протестировать: ввод депозита, риска, SL
 
-#### Клонирование репозитория
+Шаг 4: CalculationResults.jsx
 
-git clone <repository-url>
-cd RISKCALCULATOR/risk-calculator
+Создать файл: components/Calculator/CalculationResults.jsx
 
-#### Установка зависимостей
+Создать стили: styles/components/CalculationResults.css
 
-npm install
+Интегрировать в Calculator.jsx
 
-#### Запуск в development режиме
+Протестировать: отображение результатов, статус Notion
 
+Шаг 5: ExportActions.jsx
+
+Создать файл: components/Calculator/ExportActions.jsx
+
+Создать стили: styles/components/ExportActions.css
+
+Интегрировать в Calculator.jsx
+
+Протестировать: кнопки "Рассчитать", "Отправить в Notion", "Экспорт"
+
+Шаг 6: InstrumentInput.jsx
+
+Создать файл: components/Calculator/InstrumentInput.jsx
+
+Создать стили: styles/components/InstrumentInput.css
+
+Интегрировать в Calculator.jsx
+
+Протестировать: ввод инструмента, история, настройки
+
+Шаг 7: InstrumentTypeSelector.jsx
+
+Создать файл: components/Calculator/InstrumentTypeSelector.jsx
+
+Создать стили: styles/components/InstrumentTypeSelector.css
+
+Интегрировать в Calculator.jsx
+
+Протестировать: выбор типа инструмента
+
+Шаг 8: Создать index.js для компонентов
+
+Создать файл: components/Calculator/index.js
+
+Экспортировать все компоненты калькулятора
+
+ФАЗА 2: Создание структуры calculations/ (для разных типов инструментов)
+Шаг 1: Базовые файлы
+
+Создать папку: calculations/
+
+Создать: calculations/index.js (фасад)
+
+Создать: calculations/types/instrumentTypes.js
+
+Создать: calculations/types/forexPairs.js
+
+Создать: calculations/types/cryptoPairs.js
+
+Создать: calculations/types/stockSymbols.js
+
+Шаг 2: Калькуляторы
+
+Создать: calculations/calculators/ForexCalculator.js
+
+Создать: calculations/calculators/StockCalculator.js
+
+Создать: calculations/calculators/CryptoCalculator.js
+
+Создать: calculations/calculators/FuturesCalculator.js
+
+Создать: calculations/calculators/CFDsCalculator.js
+
+Шаг 3: Утилиты расчетов
+
+Создать: calculations/utils/lotCalculations.js
+
+Создать: calculations/utils/marginCalculations.js
+
+Создать: calculations/utils/commissionCalculations.js
+
+Создать: calculations/utils/riskCalculations.js
+
+ФАЗА 3: Создание хуков
+Шаг 1: useDebounce.js
+
+Создать: hooks/useDebounce.js
+
+Шаг 2: useLocalStorage.js
+
+Создать: hooks/useLocalStorage.js
+
+Шаг 3: useCalculator.js
+
+Создать: hooks/useCalculator.js
+
+ФАЗА 4: Реорганизация utils/
+Шаг 1: Перемещение notionService.js
+
+Переместить: services/notionService.js → utils/notionService.js
+
+Обновить импорты
+
+Шаг 2: Создание новых утилит
+
+Создать: utils/formatters.js
+
+Создать: utils/validators.js
+
+Создать: utils/helpers.js
+
+ФАЗА 5: Реорганизация стилей
+Шаг 1: Разделение styles.css
+
+Создать: styles/globals.css (глобальные стили)
+
+Создать: styles/components/ (стили компонентов)
+
+Создать: styles/layout/ (стили макета)
+
+Создать: styles/themes/ (темы)
+
+Шаг 2: Обновление импортов
+
+Обновить импорты во всех компонентах
+
+ФАЗА 6: Оптимизация
+Шаг 1: React.memo
+
+Добавить React.memo для всех компонентов
+
+Шаг 2: useCallback/useMemo
+
+Оптимизировать обработчики и вычисления
+
+Шаг 3: Ленивая загрузка
+
+Реализовать lazy loading для тяжелых компонентов
+
+🎯 ТЕКУЩАЯ ЗАДАЧА (НАЧАТЬ С ЭТОГО)
+СЕЙЧАС ВЫПОЛНЯЕМ: ФАЗА 1, Шаг 1 - GridSettingsPanel.jsx
+Что нужно сделать:
+
+Создать папку components/Calculator/
+
+Создать файл components/Calculator/GridSettingsPanel.jsx
+
+Создать файл styles/components/GridSettings.css
+
+Скопировать код сетки из Calculator.jsx в новый компонент
+
+Интегрировать GridSettingsPanel в Calculator.jsx
+
+Протестировать работу
+
+Критерии успеха:
+
+✅ Сетка включается/выключается
+
+✅ Можно менять количество ордеров
+
+✅ Заполняется распределение процентов
+
+✅ Последнее поле рассчитывается автоматически
+
+✅ Быстрые пресеты работают
+
+✅ Ошибки валидации отображаются
+
+## 🔧 КАК РАБОТАТЬ С ПРОЕКТОМ
+### Запуск проекта:
 npm start
-Приложение будет доступно по адресу: http://localhost:3000
 
-#### Сборка для production
+### Создание компонента:
+#### 1. Создать файл компонента
+touch src/components/Calculator/НовыйКомпонент.jsx
 
-npm run build
+#### 2. Создать файл стилей
+touch src/styles/components/НовыйКомпонент.css
 
-#### Запуск тестов
+#### 3. Протестировать
+npm start
+Тестирование после каждого изменения:
+Проверить консоль браузера на ошибки
 
-npm test
+Проверить основные функции калькулятора:
 
-## 📊 Использование калькулятора
+Ввод инструмента
 
-### Обычный режим (один ордер)
+Выбор направления
 
-- Выберите направление сделки (Long/Short)
-- Введите инструмент (например, BTCUSDT)
-- Укажите размер депозита в USDT
-- ведите цену входа и Stop Loss
-- Добавьте уровни Take Profit (опционально)
-- Нажмите "Рассчитать"
-- Сеточный режим (несколько ордеров)
-- Выполните шаги 1-4 обычного режима
-- Активируйте чекбокс "📊 Сеточный вход"
-- Укажите количество ордеров (1-10)
-- Поэтапно заполните проценты распределения:
-- Введите % для первого ордера
-- После заполнения разблокируется второе поле
-- Последний ордер рассчитывается автоматически
-- Нажмите "Рассчитать" для получения таблицы ордеров
+Ввод цены входа и SL
 
-#### Экспорт отчета
+Работа сетки (если применимо)
 
-- Нажмите "Экспорт в изображение" для сохранения отчета в JPG
-- Отчет включает все параметры сделки и результаты расчета
+Расчет результатов
 
-## 🔧 Настройка интеграции с Notion
+Отправка в Notion
 
-Для использования интеграции с Notion необходимо:
+Экспорт изображений
 
-- Создать интеграцию в Notion Developers
-- Получить Internal Integration Token
-- Создать базу данных в Notion
-- Скопировать ID базы данных
-- Добавить переменные окружения в .env файл:
-  REACT_APP_NOTION_TOKEN=your_integration_token_here
-  REACT_APP_NOTION_DATABASE_ID=your_database_id_here
+### Коммиты:
+#### После каждого успешного шага
+git add .
+git commit -m "ШАГ [номер]: [краткое описание]"
+#### Пример: git commit -m "ШАГ 1.1: Создан GridSettingsPanel.jsx"f
 
-## 📁 Структура состояния (State)
+📝 ПРИМЕЧАНИЯ ДЛЯ ПРОДОЛЖЕНИЯ РАБОТЫ
+При переходе в новый диалог:
+Загрузить этот README.md
 
-Основные поля
+Загрузить текущие файлы проекта
 
-```
-{
-// Основные параметры
-direction: 'long' | 'short' | '',
-instrument: '',
-entryPrice: '',
-slPrice: '',
-deposit: '',
-riskSize: '',
+Спросить: "На каком шаге остановились?"
 
-// Take Profit уровни
-tpLevels: [{ price: '', percent: 100 }],
+Продолжить с текущего шага
 
-// Сеточный вход
-gridEnabled: false,
-gridOrdersCount: 3,
-gridDistribution: ['', '', ''],
-gridPrices: [],
-gridQuantities: [],
-gridAveragePrice: 0,
-gridTotalQuantity: 0,
-gridInvestment: 0,
+Архитектурные решения:
+НЕ используем TypeScript - только чистый React/JSX
 
-// Результаты
-vCoins: 0, // Размер позиции в активе
-vValue: 0, // Размер позиции в USDT
-riskValue: '', // Риск в USDT
-rrRatio: '', // Risk/Reward ratio
+НЕ используем Context API - передаем пропсы напрямую
 
-// Дополнительно
-traderNote: '',
-status: 'Запланирован',
-isBacktest: false,
-date: '',
-reportId: '',
+НЕ создаем UI-кит - используем существующие стили
 
-// Ошибки
-tpError: '',
-slError: '',
-gridError: ''
-}
-```
+ДЕЛАЕМ по одному шагу - тестируем после каждого
 
-## 🎯 Алгоритмы расчета
+Важные зависимости:
+html2canvas - для экспорта изображений
 
-### Обычный вход
+localStorage - для сохранения истории и настроек
 
-Риск (USDT) = Депозит × (Риск% / 100)
-Размер позиции (актив) = Риск / |Цена входа - Stop Loss|
-Размер позиции (USDT) = Размер позиции × Цена входа
+Notion API - для отправки отчетов
 
-### Сеточный вход
+🐛 ИЗВЕСТНЫЕ ПРОБЛЕМЫ (если возникнут)
+Ошибки импорта - проверять пути к файлам
 
-1. Шаг цены = |Цена входа - Stop Loss| / Кол-во ордеров
-2. Цены ордеров: равномерное распределение между ценой входа и SL
-3. Средняя цена = Σ(Цена ордера × % распределения)
-4. Общее количество = Риск / |Средняя цена - Stop Loss|
-5. Количество по ордерам = Общее количество × % распределения
+Стили не применяются - проверять импорты CSS
 
-## 📱 Адаптивность
+Состояние не обновляется - проверять пропсы и редьюсер
 
-### Приложение полностью адаптивно и поддерживает:
+Горячие клавиши не работают - проверять useEffect в Calculator.jsx
 
-- 🖥️ Десктоп (ширина > 768px)
-- 📱 Планшеты (ширина 480px - 768px)
-- 📲 Мобильные (ширина < 480px)
+📞 КОНТАКТНАЯ ИНФОРМАЦИЯ (для ИИ-помощника)
+Текущий помощник: DeepSeek
+Ветка: refactor/calculator-split
+Последнее действие: Определение структуры проекта
+Следующее действие: Создание GridSettingsPanel.jsx
 
-## 🧪 Тестирование
-
-### Запуск тестов:
-
-npm test
-
-### Основные тесты:
-
-- Рендеринг компонента Calculator
-- Проверка начального состояния
-- Тестирование валидации полей
-
-## 🔄 Версионирование
-
-- v1.0.0: Базовая версия калькулятора
-- v1.1.0: Добавлен сеточный вход
-- v1.2.0: Улучшен интерфейс, интеграция с Notion
-
-## 📄 Лицензия
-
-MIT License
-
-## 👥 Авторы
-
-Разработка и дизайн: [Ваша команда]
-
-Идея и тестирование: [Трейдеры-консультанты]
-
-## 🤝 Вклад в проект
-
-- Форкните репозиторий
-- Создайте ветку для новой функции (git checkout -b feature/amazing-feature)
-- Зафиксируйте изменения (git commit -m 'Add amazing feature')
-- Отправьте в ветку (git push origin feature/amazing-feature)
-- Откройте Pull Request
-
-## 🐛 Отчет об ошибках
-
-Для отчетов об ошибках используйте Issues с указанием:
-
-- Шагов для воспроизведения
-- Ожидаемого поведения
-- фактического поведения
-
-Скриншоты (если применимо)
-
-Версия приложения и окружение
-
-## 📞 Поддержка
-
-Для вопросов и поддержки:
-
-📧 Email: support@example.com
-💬 Telegram: @support_channel
-🐙 GitHub Issues: Открыть issue
-🚀 Удачных сделок и точных расчетов!
