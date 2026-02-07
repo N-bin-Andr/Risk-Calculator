@@ -8,6 +8,7 @@ import { calculatorReducer, initialState } from '../reducers/calculatorReducer';
 import { validateFields } from '../utils/validateCalculator';
 import { calculateReport, getDirectionLabel } from '../utils/calculateReport';
 import InstrumentSettingsDialog from './InstrumentSettingsDialog';
+import GridSettingsPanel from './Calculator/GridSettingsPanel';
 
 const Calculator = () => {
     // Восстановление состояния из localStorage
@@ -621,8 +622,6 @@ const Calculator = () => {
         <div className="calculator">
                 <h2>Расчёт параметров ордера</h2>
 
-                {/* УБИРАЕМ блок с горячими клавишами - переносим в раздел помощи */}
-
                 {/* Ссылка на историю инструментов */}
                 <div className="calculator-header-note">
                     <p>
@@ -803,236 +802,17 @@ const Calculator = () => {
                                 </label>
                             </div>
 
-
                             {/* === НАСТРОЙКИ СЕТКИ === */}
-                            {state.gridEnabled && (
-                                <fieldset className="form-section grid-settings" style={{ marginTop: '15px' }}>
-                                    <legend>⚙️ Настройки сетки</legend>
-
-                                    {/* Добавим подсказку */}
-                                    <div style={{
-                                        backgroundColor: '#f0f8ff',
-                                        padding: '10px',
-                                        borderRadius: '6px',
-                                        marginBottom: '15px',
-                                        fontSize: '13px',
-                                        borderLeft: '3px solid #007bff'
-                                    }}>
-                                        <strong>💡 Подсказка:</strong> Заполняйте поля по порядку. Последнее поле рассчитывается автоматически.
-                                    </div>
-
-                                    <div className="inline-field">
-                                        <label>Кол-во ордеров:</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            max="10"
-                                            step="1"
-                                            value={state.gridOrdersCount}
-                                            onChange={e =>
-                                                dispatch({
-                                                    type: 'SET_GRID_ORDERS_COUNT',
-                                                    value: parseInt(e.target.value) || 3
-                                                })
-                                            }
-                                            disabled={!isDirectionChosen}
-                                        />
-                                        <span style={{
-                                            marginLeft: '10px',
-                                            fontSize: '12px',
-                                            color: '#666',
-                                            cursor: 'help'
-                                        }} title="Рекомендуется 3的五 ордеров для оптимального усреднения">
-                                            ⓘ
-                                        </span>
-                                    </div>
-
-                                    {/* Поля распределения процентов */}
-                                    {Array.from({ length: state.gridOrdersCount }).map((_, index) => {
-                                        const isEnabled = isGridFieldEnabled(index);
-                                        const isLast = index === state.gridOrdersCount - 1;
-
-                                        return (
-                                            <div key={index} className="inline-field">
-                                                <label>
-                                                    Ордер {index + 1} (%):
-                                                    {!isLast && isEnabled && (
-                                                        <span style={{
-                                                            marginLeft: '5px',
-                                                            fontSize: '10px',
-                                                            color: '#28a745',
-                                                            backgroundColor: '#d4edda',
-                                                            padding: '1px 4px',
-                                                            borderRadius: '3px'
-                                                        }}>
-                                                            ✓
-                                                        </span>
-                                                    )}
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    inputMode="decimal"
-                                                    value={state.gridDistribution[index] || ''}
-                                                    onChange={e => {
-                                                        const inputValue = e.target.value;
-
-                                                        // Разрешаем только числа, точку и пустую строку
-                                                        if (inputValue === '' || /^[0-9]*\.?[0-9]*$/.test(inputValue)) {
-                                                            dispatch({
-                                                                type: 'UPDATE_GRID_DISTRIBUTION',
-                                                                index,
-                                                                value: inputValue
-                                                            });
-                                                        }
-                                                    }}
-                                                    onBlur={e => {
-                                                        const inputValue = e.target.value;
-                                                        if (inputValue !== '') {
-                                                            const numValue = parseFloat(inputValue);
-                                                            if (!isNaN(numValue)) {
-                                                                // Ограничиваем значение 0-100
-                                                                const clampedValue = Math.max(0, Math.min(100, numValue));
-                                                                dispatch({
-                                                                    type: 'UPDATE_GRID_DISTRIBUTION',
-                                                                    index,
-                                                                    value: clampedValue.toString()
-                                                                });
-                                                            }
-                                                        }
-                                                    }}
-                                                    disabled={!isEnabled}
-                                                    placeholder={getGridFieldPlaceholder(index)}
-                                                    className={
-                                                        isLast && state.gridDistribution[index]
-                                                            ? 'auto-calculated-field'
-                                                            : ''
-                                                    }
-                                                    style={{
-                                                        backgroundColor: isLast && state.gridDistribution[index]
-                                                            ? '#f0f8ff'
-                                                            : isEnabled ? 'white' : '#f5f5f5',
-                                                        color: !isEnabled ? '#999' : '#000',
-                                                        fontWeight: isLast && state.gridDistribution[index] ? 'bold' : 'normal'
-                                                    }}
-                                                    title={
-                                                        isLast
-                                                            ? 'Автоматически рассчитывается как остаток до 100%'
-                                                            : isEnabled
-                                                                ? `Введите процент для ордера ${index + 1}`
-                                                                : 'Сначала заполните предыдущее поле'
-                                                    }
-                                                />
-                                                {isLast && state.gridDistribution[index] && (
-                                                    <span style={{
-                                                        marginLeft: '5px',
-                                                        color: '#007bff',
-                                                        fontSize: '12px'
-                                                    }}>
-                                                        ⚡
-                                                    </span>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-
-                                    <div className="distribution-total">
-                                        <strong>
-                                            Сумма: {state.gridDistribution.reduce((sum, p) => {
-                                                const num = parseFloat(p);
-                                                return sum + (isNaN(num) ? 0 : num);
-                                            }, 0).toFixed(1)}%
-                                        </strong>
-                                        {state.gridDistribution[state.gridOrdersCount - 1] &&
-                                            typeof state.gridDistribution[state.gridOrdersCount - 1] === 'string' &&
-                                            state.gridDistribution[state.gridOrdersCount - 1].includes('Ошибка') && (
-                                                <span className="error-text"> (превышает 100%)</span>
-                                            )}
-
-                                        {/* Индикатор прогресса */}
-                                        {state.gridEnabled && (
-                                            <div style={{
-                                                marginTop: '10px',
-                                                width: '100%',
-                                                backgroundColor: '#e9ecef',
-                                                borderRadius: '10px',
-                                                height: '8px',
-                                                overflow: 'hidden'
-                                            }}>
-                                                <div style={{
-                                                    width: `${Math.min(100, state.gridDistribution.reduce((sum, p) => {
-                                                        const num = parseFloat(p);
-                                                        return sum + (isNaN(num) ? 0 : num);
-                                                    }, 0))}%`,
-                                                    backgroundColor: '#28a745',
-                                                    height: '100%',
-                                                    transition: 'width 0.3s ease'
-                                                }} />
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Быстрые пресеты для распределения */}
-                                    {state.gridOrdersCount > 1 && (
-                                        <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '6px' }}>
-                                            <div style={{ fontSize: '13px', marginBottom: '8px', color: '#666' }}>
-                                                Быстрые настройки:
-                                            </div>
-                                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const equalValue = (100 / state.gridOrdersCount).toFixed(1);
-                                                        const distribution = Array(state.gridOrdersCount).fill(equalValue);
-                                                        dispatch({
-                                                            type: 'SET_FIELD',
-                                                            field: 'gridDistribution',
-                                                            value: distribution
-                                                        });
-                                                    }}
-                                                    style={{
-                                                        padding: '4px 8px',
-                                                        fontSize: '12px',
-                                                        backgroundColor: '#e8f4ff',
-                                                        border: '1px solid #cce5ff',
-                                                        borderRadius: '4px',
-                                                        cursor: 'pointer'
-                                                    }}
-                                                >
-                                                    Равномерно
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const distribution = [];
-                                                        let remaining = 100;
-                                                        for (let i = 0; i < state.gridOrdersCount - 1; i++) {
-                                                            const value = Math.round((remaining * 0.6) / (state.gridOrdersCount - i));
-                                                            distribution.push(value.toString());
-                                                            remaining -= value;
-                                                        }
-                                                        distribution.push(remaining.toString());
-                                                        dispatch({
-                                                            type: 'SET_FIELD',
-                                                            field: 'gridDistribution',
-                                                            value: distribution
-                                                        });
-                                                    }}
-                                                    style={{
-                                                        padding: '4px 8px',
-                                                        fontSize: '12px',
-                                                        backgroundColor: '#e8f4ff',
-                                                        border: '1px solid #cce5ff',
-                                                        borderRadius: '4px',
-                                                        cursor: 'pointer'
-                                                    }}
-                                                >
-                                                    Убывающее
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </fieldset>
-                            )}
+                            <GridSettingsPanel
+                                gridEnabled={state.gridEnabled}
+                                gridOrdersCount={state.gridOrdersCount}
+                                gridDistribution={state.gridDistribution}
+                                isDirectionChosen={isDirectionChosen}
+                                dispatch={dispatch}
+                                isGridFieldEnabled={isGridFieldEnabled}
+                                getGridFieldPlaceholder={getGridFieldPlaceholder}
+                                calculateLastGridField={calculateLastGridField}
+                            />
 
                             <fieldset className="form-section">
                                 <legend>🎯 Уровни Take Profit</legend>

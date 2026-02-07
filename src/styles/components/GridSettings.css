@@ -1,0 +1,151 @@
+
+/* === СТИЛИ ДЛЯ КОМПОНЕНТА GRIDSETTINGS === */
+
+/* Стиль для автоматически рассчитанного поля */
+.auto-calculated-field {
+    background-color: #f0f8ff !important;
+    font-weight: bold;
+    color: #2c5282;
+    cursor: not-allowed;
+}
+
+/* Подсказка для пользователя */
+.grid-hint {
+    background-color: #f0f8ff;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    font-size: 13px;
+    border-left: 3px solid #007bff;
+}
+
+.grid-hint strong {
+    color: #2c5282;
+}
+
+/* Иконка информации */
+.grid-info-icon {
+    margin-left: 10px;
+    font-size: 12px;
+    color: #666;
+    cursor: help;
+}
+
+/* Индикатор готовности поля */
+.field-ready-indicator {
+    margin-left: 5px;
+    font-size: 10px;
+    color: #28a745;
+    background-color: #d4edda;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+/* Индикатор автоматического расчета */
+.auto-calculated-indicator {
+    margin-left: 5px;
+    color: #007bff;
+    font-size: 12px;
+}
+
+/* Сумма распределения */
+.distribution-total {
+    margin-top: 12px;
+    padding: 10px;
+    background-color: #f0f8ff;
+    border-radius: 6px;
+    border: 1px solid #cce5ff;
+    font-size: 14px;
+}
+
+.distribution-total strong {
+    color: #2c5282;
+    display: block;
+    margin-bottom: 8px;
+}
+
+/* Прогресс-бар распределения */
+.distribution-progress {
+    width: 100%;
+    background-color: #e9ecef;
+    border-radius: 10px;
+    height: 8px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.distribution-progress-bar {
+    background-color: #28a745;
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+/* Быстрые пресеты */
+.quick-presets {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+}
+
+.presets-label {
+    font-size: 13px;
+    margin-bottom: 8px;
+    color: #666;
+}
+
+.presets-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.preset-button {
+    padding: 4px 8px;
+    font-size: 12px;
+    background-color: #e8f4ff;
+    border: 1px solid #cce5ff;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.preset-button:hover {
+    background-color: #d0e7ff;
+    border-color: #007bff;
+}
+
+/* Стили для отключенных полей */
+.grid-settings .inline-field input:disabled {
+    background-color: #f5f5f5 !important;
+    color: #999 !important;
+    cursor: not-allowed !important;
+    border-color: #ddd !important;
+}
+
+.grid-settings .inline-field input:enabled {
+    background-color: white;
+    border-color: #007bff;
+    cursor: text;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .quick-presets {
+        padding: 8px;
+    }
+
+    .presets-buttons {
+        flex-direction: column;
+    }
+
+    .preset-button {
+        width: 100%;
+        text-align: center;
+    }
+
+    .grid-hint {
+        font-size: 12px;
+        padding: 8px;
+    }
+}
