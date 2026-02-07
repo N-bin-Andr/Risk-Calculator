@@ -9,6 +9,7 @@ import { validateFields } from '../utils/validateCalculator';
 import { calculateReport, getDirectionLabel } from '../utils/calculateReport';
 import InstrumentSettingsDialog from './InstrumentSettingsDialog';
 import GridSettingsPanel from './Calculator/GridSettingsPanel';
+import TakeProfitManager from './Calculator/TakeProfitManager';
 
 const Calculator = () => {
     // Восстановление состояния из localStorage
