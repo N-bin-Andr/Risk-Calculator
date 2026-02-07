@@ -23,7 +23,7 @@ export function validateFields(state) {
     // === НОВАЯ ВАЛИДАЦИЯ ДЛЯ СЕТОЧНОГО ВХОДА ===
     if (state.gridEnabled) {
         // Проверка количества ордеров
-        if (state.gridOrdersCount < 1 || state.gridOrdersCount > 10) {
+        if (state.gridOrdersCount < 1 || state.gridOrdersCount > 7) {
             errors.gridError = 'Количество ордеров должно быть от 1 до 10';
         }
 

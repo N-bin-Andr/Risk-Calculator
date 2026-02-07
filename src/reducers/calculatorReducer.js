@@ -170,7 +170,7 @@ export function calculatorReducer(state, action) {
             };
 
         case 'SET_GRID_ORDERS_COUNT':
-            const newCount = Math.max(1, Math.min(10, action.value)); // Ограничение 1-10 ордеров
+            const newCount = Math.max(1, Math.min(6, action.value)); // Ограничение 1-6 ордеров
 
             // Создаем новое распределение с сохранением значений где возможно
             const newDistribution = Array(newCount).fill('');

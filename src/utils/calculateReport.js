@@ -36,6 +36,26 @@ export const getPriceStep = (instrumentName, customPriceStep, getDefaultPriceSte
     return 0.01;
 };
 
+// Функция для получения уровней Фибоначчи в зависимости от количества ордеров
+export function getFibonacciLevels(orderCount) {
+    switch (orderCount) {
+        case 1:
+            return [0];
+        case 2:
+            return [0, 0.5]; // 0%, 50%
+        case 3:
+            return [0, 0.5, 0.618]; // 0%, 50%, 61.8%
+        case 4:
+            return [0, 0.5, 0.618, 0.786]; // 0%, 50%, 61.8%, 78.6%
+        case 5:
+            return [0, 0.382, 0.5, 0.618, 0.786]; // 0%, 38.2%, 50%, 61.8%, 78.6%
+        case 6:
+            return [0, 0.236, 0.382, 0.5, 0.618, 0.786]; // 0%, 23.6%, 38.2%, 50%, 61.8%, 78.6%
+        default:
+            // Для большего количества используем первые 6 уровней
+            return [0, 0.236, 0.382, 0.5, 0.618, 0.786].slice(0, Math.min(orderCount, 6));
+    }
+}
 // НОВАЯ ФУНКЦИЯ: Расчет сеточного входа
 export function calculateGridReport({
     deposit,
@@ -43,7 +63,7 @@ export function calculateGridReport({
     entryPrice,
     slPrice,
     direction,
-    gridOrdersCount = 3,
+    gridOrdersCount = 2,
     gridDistribution = [],
     priceStep = null,
     getDefaultPriceStep
@@ -103,42 +123,66 @@ export function calculateGridReport({
         return isNaN(num) ? 0 : num;
     });
 
-    // Проверяем что все поля кроме последнего заполнены
+    // Проверяем что все поля кроме последнего заполнены (последний может быть 0)
     for (let i = 0; i < distribution.length - 1; i++) {
         if (distribution[i] <= 0) {
             throw new Error(`Ордер ${i + 1}: процент должен быть больше 0.`);
         }
     }
 
-    // Проверяем сумму распределения
+    // Проверяем сумму распределения (допускаем небольшую погрешность)
     const totalPercent = distribution.reduce((sum, p) => sum + p, 0);
-    if (Math.abs(totalPercent - 100) > 0.1) {
+    if (Math.abs(totalPercent - 100) > 0.5) { // Увеличили погрешность до 0.5%
         throw new Error(`Сумма распределения должна быть 100% (сейчас: ${totalPercent.toFixed(2)}%).`);
     }
 
-    // 1. Рассчитываем шаг цены (для сетки используем разницу между ордерами)
+    // 1. Рассчитываем диапазон между ценой входа и SL
     const priceRange = Math.abs(EP - SL);
     if (priceRange <= 0) {
         throw new Error('Разница между ценой входа и Stop Loss слишком мала для расчета сетки.');
     }
 
-    const priceStepGrid = priceRange / (gridOrdersCount - 1);
-
-    // 2. Рассчитываем цены для каждого ордера
+    // 2. Рассчитываем цены для каждого ордера с использованием уровней Фибоначчи
     const gridPrices = [];
-    for (let i = 0; i < gridOrdersCount; i++) {
+
+    // Проверяем ограничение на количество ордеров (макс. 6)
+    const maxOrders = 6;
+    const actualOrdersCount = Math.min(gridOrdersCount, maxOrders);
+
+    // Получаем уровни Фибоначчи для заданного количества ордеров
+    const fibLevels = getFibonacciLevels(actualOrdersCount);
+
+    // Рассчитываем цены ордеров на основе уровней Фибоначчи
+    for (let i = 0; i < actualOrdersCount; i++) {
+        const fibLevel = fibLevels[i]; // Уровень Фибоначчи для этого ордера
+
         if (direction === 'long') {
-            // Для лонга: от самой высокой (EP) к низкой (SL)
-            gridPrices.push(+(EP - (priceStepGrid * i)).toFixed(8));
+            // Для лонга: цена снижается от EP к SL
+            // fibLevel = 0 → цена = EP, fibLevel = 1 → цена = SL
+            const price = +(EP - (priceRange * fibLevel)).toFixed(8);
+            gridPrices.push(price);
         } else {
-            // Для шорта: от самой низкой (EP) к высокой (SL)
-            gridPrices.push(+(EP + (priceStepGrid * i)).toFixed(8));
+            // Для шорта: цена растет от EP к SL
+            const price = +(EP + (priceRange * fibLevel)).toFixed(8);
+            gridPrices.push(price);
         }
     }
 
-    // Проверяем что все цены положительные
-    if (gridPrices.some(price => price <= 0)) {
-        throw new Error('Рассчитанные цены ордеров должны быть положительными. Проверьте входные данные.');
+    // Проверяем, что цены не пересекаются с SL
+    const minDistance = priceRange * 0.01; // Минимальный отступ 1% от диапазона
+
+    if (direction === 'long') {
+        // Для лонга: проверяем, что последняя цена не меньше или равна SL
+        const lastPrice = gridPrices[gridPrices.length - 1];
+        if (lastPrice <= SL) {
+            gridPrices[gridPrices.length - 1] = +(SL + minDistance).toFixed(8);
+        }
+    } else {
+        // Для шорта: проверяем, что последняя цена не больше или равна SL
+        const lastPrice = gridPrices[gridPrices.length - 1];
+        if (lastPrice >= SL) {
+            gridPrices[gridPrices.length - 1] = +(SL - minDistance).toFixed(8);
+        }
     }
 
     // 3. Рассчитываем среднюю цену входа
@@ -178,8 +222,14 @@ export function calculateGridReport({
         percent: distribution[idx],
         amount: +(gridQuantities[idx] * price).toFixed(2),
         distanceToSL: Math.abs(price - SL),
-        riskPerOrder: +(gridQuantities[idx] * Math.abs(price - SL)).toFixed(2)
+        riskPerOrder: +(gridQuantities[idx] * Math.abs(price - SL)).toFixed(2),
+        fibLevel: +(fibLevels[idx] * 100).toFixed(1) // Уровень Фибоначчи в процентах
     }));
+
+    // Шаг между первыми двумя ордерами для информации
+    const gridStep = actualOrdersCount > 1
+        ? Math.abs(gridPrices[0] - gridPrices[1])
+        : 0;
 
     return {
         gridPrices,
@@ -188,9 +238,11 @@ export function calculateGridReport({
         gridTotalQuantity: +totalQuantity.toFixed(8),
         gridInvestment: +investment.toFixed(2),
         gridOrders,
-        gridStep: +priceStepGrid.toFixed(8),
+        gridStep: +gridStep.toFixed(8),
         gridMaxRisk: +maxRisk.toFixed(2),
-        gridTotalRisk: gridOrders.reduce((sum, order) => sum + order.riskPerOrder, 0)
+        gridTotalRisk: gridOrders.reduce((sum, order) => sum + order.riskPerOrder, 0),
+        fibLevels: fibLevels.map(level => +(level * 100).toFixed(1)), // Уровни Фибоначчи для отображения
+        actualOrdersCount
     };
 }
 
@@ -298,12 +350,34 @@ export function calculateReport({
 
     if (gridEnabled) {
         try {
+            // Проверяем распределение для сетки
+            if (!gridDistribution || !Array.isArray(gridDistribution) || gridDistribution.length === 0) {
+                throw new Error('Распределение по ордерам не задано.');
+            }
+
+            if (gridDistribution.length !== gridOrdersCount) {
+                throw new Error(`Количество полей распределения (${gridDistribution.length}) не соответствует количеству ордеров (${gridOrdersCount}).`);
+            }
+
             // Преобразуем распределение в числа
             const distribution = gridDistribution.map(val => {
                 if (val === '' || val === undefined || val === null) return 0;
                 const num = parseFloat(val);
                 return isNaN(num) ? 0 : num;
             });
+
+            // Проверяем что все поля кроме последнего заполнены
+            for (let i = 0; i < distribution.length - 1; i++) {
+                if (distribution[i] <= 0) {
+                    throw new Error(`Ордер ${i + 1}: процент должен быть больше 0.`);
+                }
+            }
+
+            // Проверяем сумму распределения (допускаем погрешность)
+            const totalPercent = distribution.reduce((sum, p) => sum + p, 0);
+            if (Math.abs(totalPercent - 100) > 0.5) {
+                throw new Error(`Сумма распределения должна быть 100% (сейчас: ${totalPercent.toFixed(2)}%).`);
+            }
 
             // Сохраняем использованное распределение
             usedGridDistribution = [...distribution];
