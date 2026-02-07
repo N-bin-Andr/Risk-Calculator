@@ -12,6 +12,8 @@ import InstrumentSettingsDialog from './InstrumentSettingsDialog';
 import GridSettingsPanel from './Calculator/GridSettingsPanel';
 import TakeProfitManager from './Calculator/TakeProfitManager';
 import RiskManagementPanel from './Calculator/RiskManagementPanel';
+import CalculationResults from './Calculator/CalculationResults';
+
 
 const Calculator = () => {
     // Восстановление состояния из localStorage
@@ -818,128 +820,25 @@ const Calculator = () => {
                     />
                 </fieldset>
 
-                {/* Результаты расчета */}
-                <fieldset className="report-section">
-                    <legend>📊 Результаты расчёта</legend>
-                    <div className="results">
-                        {/* Информация о шаге цены в результатах */}
-                        {state.instrument && (
-                            <div className="price-step-info">
-                                <p>
-                                    <strong>Шаг цены для {state.instrument}:</strong>
-                                    {currentPriceStep !== null ? ` ${currentPriceStep} USDT` : ' используется значение по умолчанию'}
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Статус отправки в Notion */}
-                        {notionStatus && (
-                            <div className={`notion-status ${notionStatus.includes('✅') ? 'success' : notionStatus.includes('❌') ? 'error' : 'info'}`}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '10px 15px',
-                                    borderRadius: '6px',
-                                    margin: '10px 0'
-                                }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <p style={{ margin: 0, fontWeight: 'bold' }}>
-                                        Notion: <span style={{ fontWeight: 'normal' }}>{notionStatus}</span>
-                                    </p>
-                                    {isSendingToNotion && (
-                                        <div style={{
-                                            width: '16px',
-                                            height: '16px',
-                                            border: '2px solid #f3f3f3',
-                                            borderTop: '2px solid #3498db',
-                                            borderRadius: '50%',
-                                            animation: 'spin 1s linear infinite'
-                                        }} />
-                                    )}
-                                </div>
-
-                                {/* Прогресс-бар для отправки */}
-                                {isSendingToNotion && (
-                                    <div style={{
-                                        width: '150px',
-                                        height: '6px',
-                                        backgroundColor: '#e9ecef',
-                                        borderRadius: '3px',
-                                        overflow: 'hidden',
-                                        position: 'relative'
-                                    }}>
-                                        <div style={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            height: '100%',
-                                            width: '100%',
-                                            backgroundColor: '#007bff',
-                                            animation: 'progressAnimation 2s ease-in-out infinite',
-                                            transformOrigin: 'left center'
-                                        }} />
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* РЕЖИМ ОДИН ОРДЕР */}
-                        {!state.gridEnabled && (
-                            <>
-                                <p><strong>Размер позиции (в активе):</strong> {typeof state.vCoins === 'number' ? state.vCoins.toFixed(8) : '—'}</p>
-                                <p><strong>Размер позиции (USDT):</strong> {typeof state.vValue === 'number' ? state.vValue.toFixed(2) : '—'}</p>
-                                <p><strong>Риск в USDT:</strong> {typeof state.riskValue === 'number' ? state.riskValue.toFixed(2) : '—'}</p>
-                                {state.rrRatio && <p><strong>Risk/Reward:</strong> {state.rrRatio}</p>}
-                            </>
-                        )}
-
-                        {/* РЕЖИМ СЕТОЧНЫЙ ВХОД */}
-                        {state.gridEnabled && state.gridPrices && state.gridPrices.length > 0 && (
-                            <div className="grid-results">
-                                <div className="grid-summary">
-                                    <p><strong>Средняя цена входа:</strong> {state.gridAveragePrice.toFixed(4)} USDT</p>
-                                    <p><strong>Общее количество:</strong> {state.gridTotalQuantity.toFixed(8)}</p>
-                                    <p><strong>Общая инвестиция:</strong> {state.gridInvestment.toFixed(2)} USDT</p>
-                                    <p><strong>Риск в USDT:</strong> {typeof state.riskValue === 'number' ? state.riskValue.toFixed(2) : '—'}</p>
-                                </div>
-
-                                <div className="grid-orders-table" style={{ marginTop: '15px' }}>
-                                    <h4 style={{ marginBottom: '10px' }}>📊 Ордера сетки:</h4>
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                <th>#</th>
-                                                <th>Цена (USDT)</th>
-                                                <th>%</th>
-                                                <th>Количество</th>
-                                                <th>Сумма (USDT)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {state.gridPrices.map((price, index) => (
-                                                <tr key={index}>
-                                                    <td>{index + 1}</td>
-                                                    <td>{price}</td>
-                                                    <td>{state.gridDistribution[index] ? parseFloat(state.gridDistribution[index]).toFixed(1) + '%' : '—'}</td>
-                                                    <td>{state.gridQuantities[index]?.toFixed(8)}</td>
-                                                    <td>{state.gridQuantities[index] ? (state.gridQuantities[index] * price).toFixed(2) : '—'}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Если сетка включена, но расчетов еще нет */}
-                        {state.gridEnabled && (!state.gridPrices || state.gridPrices.length === 0) && (
-                            <p style={{ fontStyle: 'italic', color: '#666' }}>
-                                Нажмите "Рассчитать" для получения результатов сетки
-                            </p>
-                        )}
-                    </div>
-                </fieldset>
+                {/* Результаты расчета*/}
+                <CalculationResults
+                    gridEnabled={state.gridEnabled}
+                    gridPrices={state.gridPrices}
+                    gridQuantities={state.gridQuantities}
+                    gridDistribution={state.gridDistribution}
+                    gridAveragePrice={state.gridAveragePrice}
+                    gridTotalQuantity={state.gridTotalQuantity}
+                    gridInvestment={state.gridInvestment}
+                    vCoins={state.vCoins}
+                    vValue={state.vValue}
+                    riskValue={state.riskValue}
+                    rrRatio={state.rrRatio}
+                    instrument={state.instrument}
+                    currentPriceStep={currentPriceStep}
+                    notionStatus={notionStatus}
+                    isSendingToNotion={isSendingToNotion}
+                    status={status}
+                />
 
                 {/* Кнопки действий */}
                 <div className="button-group">

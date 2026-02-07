@@ -1,0 +1,462 @@
+
+/* === СТИЛИ ДЛЯ КОМПОНЕНТА CALCULATIONRESULTS === */
+
+/* Основной контейнер результатов */
+.calculation-results-section {
+    background-color: #fdfdfd;
+    border-color: #007bff !important;
+    border-width: 2px !important;
+}
+
+.results-container {
+    padding: 15px;
+}
+
+/* Информация о шаге цены */
+.price-step-info {
+    padding: 12px;
+    background-color: #e8f4ff;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #007bff;
+}
+
+.price-step-info p {
+    margin: 0;
+    font-size: 14px;
+    color: #2c5282;
+}
+
+.price-step-info strong {
+    color: #1a365d;
+}
+
+/* Отображение статуса сделки */
+.status-display {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    text-align: center;
+    min-width: 150px;
+}
+
+.status-planned {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-cancelled {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.status-completed {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+/* Статус отправки в Notion */
+.notion-status-container {
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.notion-status-container.success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+}
+
+.notion-status-container.error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+}
+
+.notion-status-container.info {
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+}
+
+.notion-status-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.notion-status-icon {
+    font-size: 18px;
+}
+
+.notion-status-title {
+    font-weight: bold;
+    color: #343a40;
+}
+
+.notion-status-text {
+    flex: 1;
+    color: #495057;
+    font-size: 14px;
+}
+
+.notion-progress-bar {
+    height: 6px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.notion-progress-fill {
+    height: 100%;
+    background-color: #007bff;
+    border-radius: 3px;
+    animation: progressAnimation 2s ease-in-out infinite;
+    transform-origin: left center;
+}
+
+.notion-loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 10px auto 0;
+}
+
+/* Результаты для одного ордера */
+.single-order-results {
+    margin-bottom: 25px;
+}
+
+.single-order-results h4 {
+    color: #2c5282;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e8f4ff;
+}
+
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background-color: white;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.result-item:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+}
+
+.result-label {
+    font-weight: 500;
+    color: #495057;
+    font-size: 13px;
+}
+
+.result-value {
+    font-weight: 600;
+    color: #28a745;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+}
+
+.rr-ratio {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.rr-ratio.good {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.rr-ratio.medium {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.rr-ratio.low {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Результаты сеточного входа */
+.grid-results {
+    margin-top: 20px;
+}
+
+.grid-results h4 {
+    color: #2c5282;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e8f4ff;
+}
+
+.grid-summary {
+    margin-bottom: 25px;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.summary-item {
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.summary-label {
+    display: block;
+    font-size: 12px;
+    color: #6c757d;
+    margin-bottom: 5px;
+}
+
+.summary-value {
+    font-weight: bold;
+    color: #2c5282;
+    font-size: 15px;
+    font-family: 'Courier New', monospace;
+}
+
+/* Таблица ордеров сетки */
+.grid-orders-table-container {
+    margin-top: 20px;
+}
+
+.grid-orders-table-container h5 {
+    color: #495057;
+    margin-bottom: 15px;
+    font-size: 15px;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background-color: white;
+}
+
+.grid-orders-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+}
+
+.grid-orders-table th {
+    background-color: #e8f4ff;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #2c5282;
+    border-bottom: 2px solid #007bff;
+    font-size: 13px;
+}
+
+.grid-orders-table td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 13px;
+}
+
+.grid-orders-table .even-row {
+    background-color: #f8f9fa;
+}
+
+.grid-orders-table .odd-row {
+    background-color: white;
+}
+
+.grid-orders-table .order-number {
+    font-weight: bold;
+    color: #495057;
+    text-align: center;
+    width: 50px;
+}
+
+.grid-orders-table .order-price {
+    font-family: 'Courier New', monospace;
+    color: #28a745;
+}
+
+.grid-orders-table .order-distribution {
+    min-width: 150px;
+}
+
+.distribution-bar-container {
+    position: relative;
+    height: 24px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.distribution-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.distribution-percent {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 11px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+}
+
+.grid-orders-table .order-quantity {
+    font-family: 'Courier New', monospace;
+    color: #495057;
+}
+
+.grid-orders-table .order-amount {
+    font-family: 'Courier New', monospace;
+    color: #007bff;
+    font-weight: 500;
+}
+
+.grid-totals-row {
+    background-color: #e8f4ff !important;
+    font-weight: bold;
+}
+
+.grid-totals-row td {
+    border-top: 2px solid #007bff;
+    border-bottom: none;
+    color: #2c5282;
+}
+
+/* Сообщение об отсутствии результатов */
+.no-results-message {
+    text-align: center;
+    padding: 30px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 2px dashed #dee2e6;
+}
+
+.no-results-message p {
+    margin: 0 0 10px 0;
+    color: #6c757d;
+    font-size: 16px;
+}
+
+.no-results-message .hint {
+    font-size: 13px;
+    color: #adb5bd;
+    font-style: italic;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes progressAnimation {
+    0% {
+        transform: translateX(-100%) scaleX(0.1);
+    }
+    50% {
+        transform: translateX(0%) scaleX(0.5);
+    }
+    100% {
+        transform: translateX(100%) scaleX(0.1);
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .results-grid,
+    .summary-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .result-item,
+    .summary-item {
+        padding: 10px;
+    }
+
+    .grid-orders-table th,
+    .grid-orders-table td {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+
+    .no-results-message {
+        padding: 20px;
+    }
+
+    .status-badge {
+        min-width: 120px;
+        padding: 6px 15px;
+        font-size: 13px;
+    }
+}
+
+/* Эффекты при наведении */
+.result-item:hover .result-value {
+    color: #218838;
+    transform: scale(1.05);
+    transition: all 0.2s;
+}
+
+.grid-orders-table tr:hover {
+    background-color: #f0f8ff !important;
+}
+
+.grid-orders-table tr:hover td {
+    color: #0056b3;
+}
