@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useReducer, useEffect, useCallback } from 'react';
 import { sendReportToNotion } from '../services/notionService';
 import '../styles/styles.css';
@@ -10,6 +11,7 @@ import { calculateReport, getDirectionLabel } from '../utils/calculateReport';
 import InstrumentSettingsDialog from './InstrumentSettingsDialog';
 import GridSettingsPanel from './Calculator/GridSettingsPanel';
 import TakeProfitManager from './Calculator/TakeProfitManager';
+import RiskManagementPanel from './Calculator/RiskManagementPanel';
 
 const Calculator = () => {
     // Восстановление состояния из localStorage
@@ -313,64 +315,6 @@ const Calculator = () => {
     const handleCancelInstrumentSettings = () => {
         setShowSettingsDialog(false);
     };
-
-    // Валидация SL и TP
-    useEffect(() => {
-        const EP = parseFloat(state.entryPrice);
-        const SL = parseFloat(state.slPrice);
-        const direction = state.direction;
-
-        // SL проверка
-        if (!isNaN(SL) && !isNaN(EP) && direction) {
-            if (SL === EP) {
-                dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL не должен совпадать с ценой входа' });
-            } else if (direction === 'long' && SL > EP) {
-                dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть ниже цены входа при Long позиции' });
-            } else if (direction === 'short' && SL < EP) {
-                dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть выше цены входа при Short позиции' });
-            } else {
-                dispatch({ type: 'SET_FIELD', field: 'slError', value: '' });
-            }
-        } else {
-            dispatch({ type: 'SET_FIELD', field: 'slError', value: '' });
-        }
-
-        // TP проверка (множественные уровни)
-        const tpErrors = [];
-
-        state.tpLevels.forEach((tp, i) => {
-            const price = parseFloat(tp.price);
-            const percent = parseFloat(tp.percent);
-
-            if (isNaN(price)) {
-                tpErrors.push(`TP ${i + 1}: цена не указана`);
-            } else if (price === EP) {
-                tpErrors.push(`TP ${i + 1}: не должен совпадать с ценой входа`);
-            } else if (direction === 'long' && price < EP) {
-                tpErrors.push(`TP ${i + 1}: должен быть выше цены входа при Long позиции`);
-            } else if (direction === 'short' && price > EP) {
-                tpErrors.push(`TP ${i + 1}: должен быть ниже цены входа при Short позиции`);
-            }
-
-            if (isNaN(percent) || percent <= 0) {
-                tpErrors.push(`TP ${i + 1}: процент должен быть > 0`);
-            }
-        });
-
-        const totalPercent = state.tpLevels.reduce(
-            (acc, tp) => acc + parseFloat(tp.percent || 0),
-            0
-        );
-        if (totalPercent > 100) {
-            tpErrors.push(`Сумма процентов TP превышает 100%`);
-        }
-
-        dispatch({
-            type: 'SET_FIELD',
-            field: 'tpError',
-            value: tpErrors.join('\n')
-        });
-    }, [state.entryPrice, state.slPrice, state.direction, state.tpLevels]);
 
     // Основная функция расчета
     const calculate = async () => {
@@ -815,70 +759,14 @@ const Calculator = () => {
                                 calculateLastGridField={calculateLastGridField}
                             />
 
-                            <fieldset className="form-section">
-                                <legend>🎯 Уровни Take Profit</legend>
-                                {Array.isArray(state.tpLevels) && state.tpLevels.map((tp, index) => (
-                                    <div
-                                        key={index}
-                                        title={!isDirectionChosen ? tooltipText : ''}
-                                        className="inline-field"
-                                    >
-                                        <label>TP {index + 1}:</label>
-                                        <input
-                                            type="number"
-                                            step="0.0001"
-                                            min="0"
-                                            value={tp.price}
-                                            className={state.tpError ? 'input-error' : ''}
-                                            onChange={e =>
-                                                dispatch({
-                                                    type: 'UPDATE_TP_LEVEL',
-                                                    index,
-                                                    field: 'price',
-                                                    value: e.target.value
-                                                })
-                                            }
-                                            placeholder="Цена"
-                                            disabled={!isDirectionChosen}
-                                        />
-                                        <input
-                                            type="number"
-                                            step="1"
-                                            min="0"
-                                            max="100"
-                                            value={tp.percent}
-                                            className={state.tpError ? 'input-error' : ''}
-                                            onChange={e =>
-                                                dispatch({
-                                                    type: 'UPDATE_TP_LEVEL',
-                                                    index,
-                                                    field: 'percent',
-                                                    value: e.target.value
-                                                })
-                                            }
-                                            placeholder="% объёма"
-                                            disabled={!isDirectionChosen}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => dispatch({ type: 'REMOVE_TP_LEVEL', index })}
-                                            disabled={state.tpLevels.length === 1}
-                                            style={{ padding: '4px 8px', fontSize: '12px' }}
-                                        >
-                                            🗑️
-                                        </button>
-                                    </div>
-                                ))}
-                                <button
-                                    type="button"
-                                    onClick={() => dispatch({ type: 'ADD_TP_LEVEL' })}
-                                    disabled={!isDirectionChosen || state.tpLevels.length >= 5}
-                                    style={{ marginTop: '10px' }}
-                                >
-                                    ➕ Добавить TP (макс. 5)
-                                </button>
-                                {state.tpError && <span className="error-text">{state.tpError}</span>}
-                            </fieldset>
+                            {/* === УРОВНИ TAKE PROFIT === */}
+                            <TakeProfitManager
+                                tpLevels={state.tpLevels}
+                                tpError={state.tpError}
+                                isDirectionChosen={isDirectionChosen}
+                                dispatch={dispatch}
+                                tooltipText={tooltipText}
+                            />
 
                             <div title={!isDirectionChosen ? tooltipText : ''} className="inline-field">
                                 <label>Статус сделки: </label>
@@ -898,87 +786,20 @@ const Calculator = () => {
                             </div>
                         </fieldset>
 
-                        <fieldset className="form-section">
-                            <legend>🛡️ Риск-менеджмент</legend>
-                            <div title={!isDirectionChosen ? tooltipText : ''} className="inline-field">
-                                <label>Stop Loss (USDT):</label>
-                                <input
-                                    type="number"
-                                    step="0.0001"
-                                    min="0"
-                                    value={state.slPrice}
-                                    className={state.slError ? 'input-error' : ''}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        dispatch({ type: 'SET_FIELD', field: 'slPrice', value: value });
-
-                                        const SL = parseFloat(value);
-                                        const EP = parseFloat(state.entryPrice);
-
-                                        if (!value || isNaN(SL) || isNaN(EP)) {
-                                            dispatch({ type: 'SET_FIELD', field: 'slError', value: '' });
-                                            return;
-                                        }
-
-                                        if (SL === EP) {
-                                            dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL не должен совпадать с ценой входа' });
-                                        } else if (state.direction === 'long' && SL > EP) {
-                                            dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть ниже цены входа при Long позиции' });
-                                        } else if (state.direction === 'short' && SL < EP) {
-                                            dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть выше цены входа при Short позиции' });
-                                        } else {
-                                            dispatch({ type: 'SET_FIELD', field: 'slError', value: '' });
-                                        }
-                                    }}
-                                    disabled={!isDirectionChosen}
-                                    placeholder="0.0000"
-                                />
-                            </div>
-                            {state.slError && <span className="error-text">{state.slError}</span>}
-
-                            <div className="inline-field">
-                                <label>Риск на сделку (%):</label>
-                                <div style={{ position: 'relative', width: '160px' }}>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        max="100"
-                                        value={riskSize}
-                                        onChange={e => {
-                                            const value = e.target.value;
-                                            setRiskSize(value);
-                                        }}
-                                        onBlur={() => {
-                                            if (riskSize) {
-                                                localStorage.setItem('lastRiskSize', riskSize);
-                                                localStorage.setItem('savedRiskSize', riskSize);
-                                                dispatch({ type: 'SET_FIELD', field: 'riskSize', value: riskSize });
-                                            }
-                                        }}
-                                        placeholder="2"
-                                    />
-                                    {riskSize && (
-                                        <span
-                                            style={{
-                                                position: 'absolute',
-                                                right: '8px',
-                                                top: '50%',
-                                                transform: 'translateY(-50%)',
-                                                fontSize: '10px',
-                                                color: '#28a745',
-                                                backgroundColor: '#d4edda',
-                                                padding: '1px 4px',
-                                                borderRadius: '3px'
-                                            }}
-                                            title="Сохранено в браузере"
-                                        >
-                                            💾
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        </fieldset>
+                        {/* === РИСК-МЕНЕДЖМЕНТ === */}
+                        <RiskManagementPanel
+                            deposit={deposit}
+                            setDeposit={setDeposit}
+                            riskSize={riskSize}
+                            setRiskSize={setRiskSize}
+                            slPrice={state.slPrice}
+                            slError={state.slError}
+                            isDirectionChosen={isDirectionChosen}
+                            dispatch={dispatch}
+                            entryPrice={state.entryPrice}
+                            direction={state.direction}
+                            tooltipText={tooltipText}
+                        />
                     </div>
                 </div>
 
