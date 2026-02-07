@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useReducer, useEffect, useCallback } from 'react';
 import { sendReportToNotion } from '../services/notionService';
 import '../styles/styles.css';
@@ -620,19 +621,9 @@ const Calculator = () => {
         <div className="calculator">
                 <h2>Расчёт параметров ордера</h2>
 
-                {/* Информация о горячих клавишах */}
-                <div className="calculator-header-note" style={{ backgroundColor: '#fff3cd', borderLeftColor: '#ffc107' }}>
-                    <p>
-                        <strong>⚡ Горячие клавиши:</strong>
-                        <span style={{ marginLeft: '10px' }}><strong>Ctrl+Enter</strong> - Рассчитать</span>
-                        <span style={{ marginLeft: '10px' }}><strong>Ctrl+S</strong> - Отправить в Notion</span>
-                        <span style={{ marginLeft: '10px' }}><strong>Ctrl+R</strong> - Экспорт в изображение</span>
-                        <span style={{ marginLeft: '10px' }}><strong>Ctrl+G</strong> - Вкл/выкл сетку</span>
-                        <span style={{ marginLeft: '10px' }}><strong>Esc</strong> - Закрыть подсказки</span>
-                    </p>
-                </div>
+                {/* УБИРАЕМ блок с горячими клавишами - переносим в раздел помощи */}
 
-                {/* Ссылка на историю инструментов - ТЕПЕРЬ ВТОРОЙ БЛОК */}
+                {/* Ссылка на историю инструментов */}
                 <div className="calculator-header-note">
                     <p>
                         💡 <strong>Инструменты сохраняются автоматически.</strong>
@@ -647,7 +638,7 @@ const Calculator = () => {
                     </p>
                 </div>
 
-                {/* Информация о текущем шаге цены - ТЕПЕРЬ ТРЕТИЙ БЛОК */}
+                {/* Информация о текущем шаге цены */}
                 {state.instrument && currentPriceStep !== null && (
                     <div className="calculator-header-note">
                         <p>
@@ -851,7 +842,7 @@ const Calculator = () => {
                                             fontSize: '12px',
                                             color: '#666',
                                             cursor: 'help'
-                                        }} title="Рекомендуется 3-5 ордеров для оптимального усреднения">
+                                        }} title="Рекомендуется 3的五 ордеров для оптимального усреднения">
                                             ⓘ
                                         </span>
                                     </div>
