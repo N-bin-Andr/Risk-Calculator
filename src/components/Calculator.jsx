@@ -13,6 +13,9 @@ import GridSettingsPanel from './Calculator/GridSettingsPanel';
 import TakeProfitManager from './Calculator/TakeProfitManager';
 import RiskManagementPanel from './Calculator/RiskManagementPanel';
 import CalculationResults from './Calculator/CalculationResults';
+import ExportActions from './Calculator/ExportActions';
+
+
 
 
 const Calculator = () => {
@@ -532,73 +535,75 @@ const Calculator = () => {
         localStorage.removeItem('lastStatus');
     };
 
-    // В Calculator.jsx добавим useEffect для горячих клавиш
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            // Ctrl+Enter - рассчитать
-            if (e.ctrlKey && e.key === 'Enter') {
-                e.preventDefault();
-                calculate();
-            }
 
-                // Ctrl+S - отправить в Notion
-            if (e.ctrlKey && e.key === 's') {
-                e.preventDefault();
-                if (reportData && !isSendingToNotion) {
-                    sendToNotion();
+    // Обработка горячих клавиш
+        useEffect(() => {
+            const handleKeyDown = (e) => {
+                // Ctrl+Enter - рассчитать
+                if (e.ctrlKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    calculate();
                 }
-            }
+
+                // Ctrl+E - экспорт в изображение
+                if (e.ctrlKey && e.key === 'e') {
+                    e.preventDefault();
+                    if (reportData && !isSendingToNotion) {
+                        exportToImage();
+                    }
+                }
 
                 // Esc - закрыть подсказки
-            if (e.key === 'Escape') {
-                setShowSuggestions(false);
-                setSuggestionIndex(-1);
-            }
+                if (e.key === 'Escape') {
+                    setShowSuggestions(false);
+                    setSuggestionIndex(-1);
+                }
             };
 
             document.addEventListener('keydown', handleKeyDown);
             return () => {
                 document.removeEventListener('keydown', handleKeyDown);
             };
-    }, [calculate, sendToNotion, reportData, isSendingToNotion]);
-
+        }, [calculate, exportToImage, reportData, isSendingToNotion]);
 
     if (!state) return <div>Загрузка калькулятора...</div>;
 
     return (
         <div className="calculator">
-                <h2>Расчёт параметров ордера</h2>
+            <h2>Расчёт параметров ордера</h2>
 
-                {/* Ссылка на историю инструментов */}
+            {/* Ссылка на историю инструментов */}
+            <div className="calculator-header-note">
+                <p>
+                    💡 <strong>Инструменты сохраняются автоматически.</strong>
+                    Для просмотра и управления истории инструментов перейдите в раздел
+                    <span
+                        className="link-to-history"
+                        onClick={() => window.location.hash = '#instruments'}
+                        style={{ marginLeft: '5px' }}
+                    >
+                        📚 История инструментов
+                    </span>
+                </p>
+            </div>
+
+            {/* Информация о текущем шаге цены */}
+            {state.instrument && currentPriceStep !== null && (
                 <div className="calculator-header-note">
                     <p>
-                        💡 <strong>Инструменты сохраняются автоматически.</strong>
-                        Для просмотра и управления истории инструментов перейдите в раздел
-                        <span
-                            className="link-to-history"
-                            onClick={() => window.location.hash = '#instruments'}
-                            style={{ marginLeft: '5px' }}
+                        📏 <strong>Шаг цены для {state.instrument}:</strong> {currentPriceStep} USDT
+                        <button
+                            className="btn-settings"
+                            onClick={handleInstrumentSettingsClick}
+                            style={{ marginLeft: '10px' }}
                         >
-                            📚 История инструментов
-                        </span>
+                            ⚙️ Изменить
+                        </button>
                     </p>
                 </div>
-
-                {/* Информация о текущем шаге цены */}
-                {state.instrument && currentPriceStep !== null && (
-                    <div className="calculator-header-note">
-                        <p>
-                            📏 <strong>Шаг цены для {state.instrument}:</strong> {currentPriceStep} USDT
-                            <button
-                                className="btn-settings"
-                                onClick={handleInstrumentSettingsClick}
-                                style={{ marginLeft: '10px' }}
-                            >
-                                ⚙️ Изменить
-                            </button>
-                        </p>
-                    </div>
             )}
+
+            {/* НАЧАЛО формы */}
             <form onSubmit={(e) => e.preventDefault()}>
                 <div className="inline-checkbox">
                     <input
@@ -637,9 +642,6 @@ const Calculator = () => {
                                         value={state.instrument}
                                         onChange={handleInstrumentChange}
                                         onKeyDown={handleInstrumentKeyDown}
-                                        onFocus={() => {
-                                            // УБИРАЕМ отображение подсказок при фокусе
-                                        }}
                                         onBlur={handleInstrumentBlur}
                                         list="instrument-options"
                                         autoComplete="off"
@@ -840,84 +842,48 @@ const Calculator = () => {
                     status={status}
                 />
 
-                {/* Кнопки действий */}
-                <div className="button-group">
-                    <button
-                        type="button"
-                        onClick={calculate}
-                        disabled={!!state.slError || !!state.tpError || !!state.gridError || !isDirectionChosen}
-                        style={{
-                            backgroundColor: !isDirectionChosen ? '#ccc' : '#007bff',
-                            flex: 1
-                        }}
-                    >
-                        📈 Рассчитать
-                    </button>
+                {/* Компонент кнопок экспорта и отправки */}
+                <ExportActions
+                    reportData={reportData}
+                    isSendingToNotion={isSendingToNotion}
+                    notionStatus={notionStatus}
+                    slError={state.slError}
+                    tpError={state.tpError}
+                    gridError={state.gridError}
+                    isDirectionChosen={isDirectionChosen}
+                    onCalculate={calculate}
+                    onSendToNotion={sendToNotion}
+                    onExportToImage={exportToImage}
+                    onResetForm={resetForm}
+                />
 
-                    <button
-                        type="button"
-                        onClick={sendToNotion}
-                        disabled={!reportData || isSendingToNotion || !!state.slError || !!state.tpError || !!state.gridError}
-                        style={{
-                            backgroundColor: !reportData ? '#ccc' : '#6c757d',
-                            flex: 1,
-                            opacity: isSendingToNotion ? 0.7 : 1
-                        }}
-                    >
-                        {isSendingToNotion ? '📤 Отправка...' : '📤 Отправить в Notion'}
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={exportToImage}
-                        disabled={!reportData || !!state.slError || !!state.tpError || !!state.gridError}
-                        style={{
-                            backgroundColor: !reportData ? '#ccc' : '#28a745',
-                            flex: 1
-                        }}
-                    >
-                        📷 Экспорт в изображение
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={resetForm}
-                        style={{
-                            backgroundColor: '#dc3545',
-                            flex: 0.5
-                        }}
-                    >
-                        🗑️ Очистить форму
-                    </button>
-                </div>
-            </form>
-
-            {/* Вывод ошибок - сделаем более информативным */}
-            {(state.tpError || state.slError || state.gridError) && (
-                <div className="form-errors" style={{
-                    animation: 'slideIn 0.3s ease-out',
-                    maxHeight: '200px',
-                    overflowY: 'auto'
-                }}>
-                    <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                        {state.tpError && state.tpError.split('\n').map((error, index) => (
-                            <li key={`tp-error-${index}`} style={{ marginBottom: '5px' }}>
-                                <span className="error-icon">⚠️</span> Take Profit: {error}
-                            </li>
-                        ))}
-                        {state.slError && (
-                            <li style={{ marginBottom: '5px' }}>
-                                <span className="error-icon">⚠️</span> Stop Loss: {state.slError}
-                            </li>
-                        )}
-                        {state.gridError && state.gridError.split('\n').map((error, index) => (
-                            <li key={`grid-error-${index}`} style={{ marginBottom: '5px' }}>
-                                <span className="error-icon">⚠️</span> Сетка: {error}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
+                {/* Вывод ошибок - сделаем более информативным */}
+                {(state.tpError || state.slError || state.gridError) && (
+                    <div className="form-errors" style={{
+                        animation: 'slideIn 0.3s ease-out',
+                        maxHeight: '200px',
+                        overflowY: 'auto'
+                    }}>
+                        <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                            {state.tpError && state.tpError.split('\n').map((error, index) => (
+                                <li key={`tp-error-${index}`} style={{ marginBottom: '5px' }}>
+                                    <span className="error-icon">⚠️</span> Take Profit: {error}
+                                </li>
+                            ))}
+                            {state.slError && (
+                                <li style={{ marginBottom: '5px' }}>
+                                    <span className="error-icon">⚠️</span> Stop Loss: {state.slError}
+                                </li>
+                            )}
+                            {state.gridError && state.gridError.split('\n').map((error, index) => (
+                                <li key={`grid-error-${index}`} style={{ marginBottom: '5px' }}>
+                                    <span className="error-icon">⚠️</span> Сетка: {error}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+            </form> {/* ЗАКРЫВАЕМ форму здесь */}
 
             {/* Диалог настроек инструмента */}
             <InstrumentSettingsDialog
@@ -1049,6 +1015,6 @@ const Calculator = () => {
             )}
         </div>
     );
-};
+}; // ЗАКРЫВАЕМ компонент здесь
 
 export default Calculator;
