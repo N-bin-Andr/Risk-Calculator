@@ -1,6 +1,7 @@
-// src/components/Calculator/Calculator.jsx - обновленная версия с интеграцией InstrumentInput
+// src/components/Calculator/Calculator.jsx
 import React, { useState, useEffect, useReducer, useCallback } from 'react';
 import InstrumentInput from './InstrumentInput';
+import InstrumentTypeSelector, { INSTRUMENT_DETAILS } from './InstrumentTypeSelector';
 import GridSettingsPanel from './GridSettingsPanel';
 import TakeProfitManager from './TakeProfitManager';
 import RiskManagementPanel from './RiskManagementPanel';
@@ -9,9 +10,10 @@ import ExportActions from './ExportActions';
 import InstrumentSettingsDialog from '../InstrumentSettingsDialog/InstrumentSettingsDialog';
 import { useInstrumentHistory } from '../../hooks/useInstrumentHistory';
 import { calculatorReducer, initialState } from '../../reducers/calculatorReducer';
-import { calculateReport } from '../../utils/calculateReport';
+import { calculateInstrumentReport, getDefaultPriceStep } from '../../calculations';
 import { validateFields } from '../../utils/validateCalculator';
 import { sendReportToNotion } from '../../utils/notionService';
+import { formatCurrency } from '../../utils/formatters';
 import html2canvas from 'html2canvas';
 import '../../styles/components/Calculator.css';
 
@@ -23,6 +25,9 @@ const Calculator = () => {
     const [isSendingToNotion, setIsSendingToNotion] = useState(false);
     const [instrumentSettingsOpen, setInstrumentSettingsOpen] = useState(false);
     const [selectedInstrumentForSettings, setSelectedInstrumentForSettings] = useState('');
+    const [selectedInstrumentType, setSelectedInstrumentType] = useState(null);
+    const [calculationResults, setCalculationResults] = useState(null);
+    const [calculationError, setCalculationError] = useState('');
 
     const {
         history,
@@ -63,6 +68,22 @@ const Calculator = () => {
 
     const tooltipText = "Сначала выберите направление сделки (Long/Short)";
 
+    // Обработчик выбора типа инструмента
+    const handleInstrumentTypeSelect = useCallback((typeId) => {
+        setSelectedInstrumentType(typeId);
+
+        // Автоматически устанавливаем шаг цены на основе типа
+        if (typeId && INSTRUMENT_DETAILS[typeId]) {
+            const priceStep = INSTRUMENT_DETAILS[typeId].priceStep;
+            dispatch({ type: 'SET_FIELD', field: 'currentPriceStep', value: priceStep });
+
+            // Если есть выбранный инструмент, обновляем его настройки
+            if (instrument && updateInstrumentPriceStep) {
+                updateInstrumentPriceStep(instrument, priceStep);
+            }
+        }
+    }, [instrument, updateInstrumentPriceStep]);
+
     // Функция для получения подсказок инструментов
     const getInstrumentSuggestions = useCallback((input) => {
         return getSuggestions(input);
@@ -83,8 +104,50 @@ const Calculator = () => {
     // Функция для сохранения настроек инструмента
     const handleSaveInstrumentSettings = useCallback((instrumentName, priceStep) => {
         updateInstrumentPriceStep(instrumentName, priceStep);
+        dispatch({ type: 'SET_FIELD', field: 'currentPriceStep', value: priceStep });
         handleCloseInstrumentSettings();
     }, [updateInstrumentPriceStep, handleCloseInstrumentSettings]);
+
+    // Автоматическое определение типа инструмента при его изменении
+    useEffect(() => {
+        if (!instrument) {
+            setSelectedInstrumentType(null);
+            return;
+        }
+
+        const instrumentUpper = instrument.toUpperCase();
+        let detectedType = null;
+
+        // Определяем тип по паттернам (упрощенная версия)
+        if (instrumentUpper.includes('/')) {
+            // Валютные пары или металлы
+            if (instrumentUpper.includes('XAU') || instrumentUpper.includes('XAG') ||
+                instrumentUpper.includes('XPT') || instrumentUpper.includes('XPD')) {
+                detectedType = 'metals';
+            } else if (instrumentUpper.includes('USD') || instrumentUpper.includes('EUR') ||
+                       instrumentUpper.includes('JPY') || instrumentUpper.includes('GBP')) {
+                detectedType = instrumentUpper.includes('USD') ? 'forex_major' : 'forex_minor';
+            }
+        } else if (instrumentUpper.includes('USDT') || instrumentUpper.includes('BTC') ||
+                   instrumentUpper.includes('ETH') || instrumentUpper.includes('BNB')) {
+            // Криптовалюты
+            detectedType = 'crypto_spot';
+        } else if (instrumentUpper.length <= 5 && !instrumentUpper.includes('.')) {
+            // Акции (тикеры)
+            detectedType = 'stocks_us';
+        } else if (instrumentUpper.includes('.MX') || instrumentUpper.includes('.ME')) {
+            // Индексы
+            detectedType = 'indices_world';
+        }
+
+        if (detectedType && INSTRUMENT_DETAILS[detectedType]) {
+            setSelectedInstrumentType(detectedType);
+
+            // Автоматически устанавливаем шаг цены
+            const priceStep = INSTRUMENT_DETAILS[detectedType].priceStep;
+            dispatch({ type: 'SET_FIELD', field: 'currentPriceStep', value: priceStep });
+        }
+    }, [instrument]);
 
     // Функция для проверки доступности полей сетки
     const isGridFieldEnabled = useCallback((index) => {
@@ -121,8 +184,13 @@ const Calculator = () => {
         return '0.0';
     }, [gridDistribution]);
 
-    // Обработчик расчета
+    // Основной обработчик расчета с использованием новой системы
     const handleCalculate = useCallback(() => {
+        // Сбрасываем предыдущие ошибки и результаты
+        setCalculationError('');
+        setCalculationResults(null);
+
+        // Валидация полей
         const errors = validateFields(state);
 
         if (Object.keys(errors).length > 0) {
@@ -135,87 +203,135 @@ const Calculator = () => {
             return;
         }
 
+        // Проверка обязательных числовых полей
+        const depositNum = parseFloat(deposit);
+        const riskSizeNum = parseFloat(riskSize);
+        const entryPriceNum = parseFloat(entryPrice);
+        const slPriceNum = parseFloat(slPrice);
+
+        if (isNaN(depositNum) || depositNum <= 0) {
+            setCalculationError('Депозит должен быть положительным числом');
+            return;
+        }
+
+        if (isNaN(riskSizeNum) || riskSizeNum <= 0 || riskSizeNum > 100) {
+            setCalculationError('Риск должен быть от 0.01% до 100%');
+            return;
+        }
+
+        if (isNaN(entryPriceNum) || entryPriceNum <= 0) {
+            setCalculationError('Цена входа должна быть положительным числом');
+            return;
+        }
+
+        if (isNaN(slPriceNum) || slPriceNum <= 0) {
+            setCalculationError('Stop Loss должен быть положительным числом');
+            return;
+        }
+
+        if (entryPriceNum === slPriceNum) {
+            setCalculationError('Цена входа и Stop Loss не должны совпадать');
+            return;
+        }
+
         try {
-            const reportData = calculateReport({
-                deposit,
-                riskSize,
-                entryPrice,
-                slPrice,
-                takeProfitPrice: tpLevels[0]?.price,
+            // Подготавливаем параметры для расчета
+            const calculationParams = {
+                // Основные параметры
+                instrument: instrument.trim(),
+                instrumentType: selectedInstrumentType,
                 direction,
-                instrument,
+                entryPrice: entryPriceNum,
+                slPrice: slPriceNum,
+
+                // Риск-менеджмент
+                deposit: depositNum,
+                riskSize: riskSizeNum,
+
+                // Take Profit уровни
+                tpLevels: tpLevels.filter(tp => tp.price && tp.percent).map(tp => ({
+                    price: parseFloat(tp.price),
+                    percent: parseFloat(tp.percent)
+                })),
+
+                // Настройки сетки (если включена)
+                gridEnabled,
+                gridOrdersCount,
+                gridDistribution: gridDistribution.map(val => parseFloat(val) || 0),
+
+                // Дополнительные параметры
                 traderNote,
                 status,
                 isBacktest,
-                tpLevels,
-                gridEnabled,
-                gridOrdersCount,
-                gridDistribution,
-                priceStep: currentPriceStep,
-                getDefaultPriceStep: (name) => {
-                    // Используем логику из useInstrumentHistory
-                    const lowerName = name.toLowerCase();
-                    if (lowerName.includes('btc') || lowerName.includes('eth') ||
-                        lowerName.includes('usdt') || lowerName.includes('bnb')) {
-                        return 0.01;
-                    }
-                    if (lowerName.includes('.mx') || lowerName.includes('.me')) {
-                        return 0.01;
-                    }
-                    if (lowerName.includes('usd') || lowerName.includes('eur') ||
-                        lowerName.includes('gbp') || lowerName.includes('jpy')) {
-                        return 0.0001;
-                    }
-                    return 0.01;
-                }
-            });
+                accountCurrency: 'USD',
 
-            // Обновляем state с результатами расчета
+                // Шаг цены
+                currentPriceStep: currentPriceStep || getDefaultPriceStep(instrument)
+            };
+
+            console.log('Параметры расчета:', calculationParams);
+
+            // Выполняем расчет с использованием новой системы
+            const reportData = calculateInstrumentReport(calculationParams);
+
+            console.log('Результаты расчета:', reportData);
+
+            // Сохраняем результаты расчета
+            setCalculationResults(reportData);
+
+            // Обновляем state с результатами расчета для обратной совместимости
             dispatch({
                 type: 'SET_FIELD',
                 field: 'vCoins',
-                value: reportData.vCoins
+                value: reportData.positionSize || reportData.positionLots || reportData.shares || 0
             });
+
             dispatch({
                 type: 'SET_FIELD',
                 field: 'vValue',
-                value: reportData.vValue
+                value: reportData.positionValue || 0
             });
+
             dispatch({
                 type: 'SET_FIELD',
                 field: 'riskValue',
-                value: reportData.riskValue
+                value: reportData.riskAmount || 0
             });
+
             dispatch({
                 type: 'SET_FIELD',
                 field: 'rrRatio',
-                value: reportData.rrRatio
+                value: reportData.tpResults?.[0]?.rrRatio ||
+                       reportData.tpDetails?.[0]?.rrRatio || 0
             });
+
             dispatch({
                 type: 'SET_FIELD',
                 field: 'slPoints',
-                value: reportData.slPoints
+                value: reportData.stopLossPips || reportData.slPoints || 0
             });
+
             dispatch({
                 type: 'SET_FIELD',
                 field: 'reportId',
-                value: reportData.reportId
+                value: reportData.reportId || `ORD-${Date.now()}`
             });
+
             dispatch({
                 type: 'SET_FIELD',
                 field: 'date',
-                value: reportData.date
+                value: reportData.date || new Date().toLocaleDateString('ru-RU')
             });
 
             // Если включена сетка, обновляем данные сетки
-            if (gridEnabled && reportData.gridReport) {
+            if (gridEnabled && reportData.gridResults) {
                 dispatch({
                     type: 'SET_GRID_CALCULATION_RESULTS',
-                    prices: reportData.gridReport.gridPrices,
-                    quantities: reportData.gridReport.gridQuantities,
-                    averagePrice: reportData.gridReport.gridAveragePrice,
-                    totalQuantity: reportData.gridReport.gridTotalQuantity,
-                    investment: reportData.gridReport.gridInvestment
+                    prices: reportData.gridResults.orders?.map(o => o.price) || [],
+                    quantities: reportData.gridResults.orders?.map(o => o.units) || [],
+                    averagePrice: reportData.gridResults.avgPrice || 0,
+                    totalQuantity: reportData.gridResults.totalLots || reportData.gridResults.totalInvestment || 0,
+                    investment: reportData.gridResults.totalInvestment || 0
                 });
             }
 
@@ -227,17 +343,21 @@ const Calculator = () => {
                 addInstrument(instrument, currentPriceStep);
             }
 
+            // Успешное завершение расчета
+            setCalculationError('');
+
         } catch (error) {
             console.error('Ошибка расчета:', error);
+            setCalculationError(`Ошибка расчета: ${error.message}`);
             alert(`Ошибка расчета: ${error.message}`);
         }
     }, [state, deposit, riskSize, entryPrice, slPrice, direction, instrument, traderNote,
         status, isBacktest, tpLevels, gridEnabled, gridOrdersCount, gridDistribution,
-        currentPriceStep, addInstrument]);
+        currentPriceStep, selectedInstrumentType, addInstrument]);
 
     // Обработчик отправки в Notion
     const handleSendToNotion = useCallback(async () => {
-        if (!vCoins || isNaN(vCoins)) {
+        if (!calculationResults) {
             alert('Сначала выполните расчет');
             return;
         }
@@ -247,29 +367,29 @@ const Calculator = () => {
 
         try {
             const reportData = {
-                reportId: state.reportId || `ORD-${Date.now()}`,
-                date: state.date || new Date().toLocaleDateString('ru-RU'),
+                reportId: calculationResults.reportId || `ORD-${Date.now()}`,
+                date: calculationResults.date || new Date().toLocaleDateString('ru-RU'),
                 instrument,
                 direction,
-                entryPrice,
-                slPrice,
-                takeProfitPrice: tpLevels[0]?.price,
-                deposit,
-                riskSize,
-                riskValue,
-                vCoins,
-                vValue,
-                rrRatio,
-                slPoints: state.slPoints || 0,
+                entryPrice: parseFloat(entryPrice),
+                slPrice: parseFloat(slPrice),
+                takeProfitPrice: tpLevels[0]?.price ? parseFloat(tpLevels[0].price) : null,
+                deposit: parseFloat(deposit),
+                riskSize: parseFloat(riskSize),
+                riskValue: calculationResults.riskAmount || 0,
+                vCoins: calculationResults.positionSize || calculationResults.positionLots || calculationResults.shares || 0,
+                vValue: calculationResults.positionValue || 0,
+                rrRatio: calculationResults.tpResults?.[0]?.rrRatio || calculationResults.rrRatio || 0,
+                slPoints: calculationResults.stopLossPips || calculationResults.slPoints || 0,
                 traderNote,
                 status,
                 isBacktest,
                 gridEnabled,
                 gridOrdersCount,
-                gridReport: gridEnabled ? {
-                    gridAveragePrice,
-                    gridInvestment
-                } : null
+                instrumentType: selectedInstrumentType,
+                calculatorType: calculationResults.calculatorType || 'unknown',
+                marginRequired: calculationResults.marginRequired,
+                freeMargin: calculationResults.freeMargin
             };
 
             const result = await sendReportToNotion(
@@ -294,10 +414,8 @@ const Calculator = () => {
                 setNotionStatus('');
             }, 5000);
         }
-    }, [vCoins, state.reportId, state.date, state.slPoints, instrument, direction,
-        entryPrice, slPrice, tpLevels, deposit, riskSize, riskValue, vValue, rrRatio,
-        traderNote, status, isBacktest, gridEnabled, gridOrdersCount, gridAveragePrice,
-        gridInvestment]);
+    }, [calculationResults, instrument, direction, entryPrice, slPrice, tpLevels, deposit,
+        riskSize, traderNote, status, isBacktest, gridEnabled, gridOrdersCount, selectedInstrumentType]);
 
     // Обработчик экспорта в изображение
     const handleExportToImage = useCallback(() => {
@@ -310,12 +428,16 @@ const Calculator = () => {
         html2canvas(reportElement, {
             backgroundColor: '#fdfdfd',
             scale: 2,
-            useCORS: true
+            useCORS: true,
+            logging: false
         }).then(canvas => {
             const link = document.createElement('a');
             link.download = `risk-report-${instrument || 'trade'}-${new Date().toISOString().slice(0, 10)}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
+        }).catch(error => {
+            console.error('Ошибка экспорта:', error);
+            alert('Ошибка при экспорте изображения');
         });
     }, [instrument]);
 
@@ -323,8 +445,11 @@ const Calculator = () => {
     const handleResetForm = useCallback(() => {
         dispatch({
             type: 'RESET_FORM',
-            keepFields: ['deposit', 'riskSize', 'instrument', 'isBacktest']
+            keepFields: ['deposit', 'riskSize', 'instrument', 'isBacktest', 'currentPriceStep']
         });
+        setSelectedInstrumentType(null);
+        setCalculationResults(null);
+        setCalculationError('');
         setNotionStatus('');
     }, []);
 
@@ -336,23 +461,28 @@ const Calculator = () => {
         // Сбрасываем ошибки, связанные с направлением
         dispatch({ type: 'SET_FIELD', field: 'slError', value: '' });
         dispatch({ type: 'SET_FIELD', field: 'tpError', value: '' });
+        setCalculationError('');
     }, []);
 
     // Данные для экспорта
-    const reportData = vCoins && !isNaN(vCoins) ? {
+    const reportData = calculationResults ? {
         instrument,
         direction,
         entryPrice,
         slPrice,
         deposit,
         riskSize,
-        vCoins,
-        vValue,
-        riskValue,
-        rrRatio,
+        vCoins: calculationResults.positionSize || calculationResults.positionLots || calculationResults.shares || 0,
+        vValue: calculationResults.positionValue || 0,
+        riskValue: calculationResults.riskAmount || 0,
+        rrRatio: calculationResults.tpResults?.[0]?.rrRatio || calculationResults.rrRatio || 0,
         traderNote,
         status,
-        date: state.date
+        date: calculationResults.date,
+        instrumentType: selectedInstrumentType,
+        calculatorType: calculationResults.calculatorType,
+        marginRequired: calculationResults.marginRequired,
+        freeMargin: calculationResults.freeMargin
     } : null;
 
     return (
@@ -368,12 +498,20 @@ const Calculator = () => {
                 </p>
             </div>
 
+            {/* Сообщение об ошибке расчета */}
+            {calculationError && (
+                <div className="calculation-error">
+                    <div className="error-icon">⚠️</div>
+                    <div className="error-message">{calculationError}</div>
+                </div>
+            )}
+
             <form onSubmit={(e) => e.preventDefault()}>
                 {/* Основные поля */}
                 <fieldset className="form-section">
                     <legend>📝 Основные параметры</legend>
 
-                    {/* Ввод инструмента с использованием нового компонента */}
+                    {/* Ввод инструмента */}
                     <InstrumentInput
                         instrument={instrument}
                         setInstrument={(value) => dispatch({ type: 'SET_FIELD', field: 'instrument', value })}
@@ -392,6 +530,15 @@ const Calculator = () => {
                         }}
                         onOpenSettings={handleOpenInstrumentSettings}
                         getSuggestions={getInstrumentSuggestions}
+                    />
+
+                    {/* Выбор типа инструмента */}
+                    <InstrumentTypeSelector
+                        selectedType={selectedInstrumentType}
+                        onTypeSelect={handleInstrumentTypeSelect}
+                        instrument={instrument}
+                        isDirectionChosen={isDirectionChosen}
+                        tooltipText={tooltipText}
                     />
 
                     {/* Выбор направления сделки */}
@@ -525,7 +672,7 @@ const Calculator = () => {
             </form>
 
             {/* Результаты расчета */}
-            {showReport && (
+            {showReport && calculationResults && (
                 <CalculationResults
                     gridEnabled={gridEnabled}
                     gridPrices={gridPrices}
@@ -534,15 +681,22 @@ const Calculator = () => {
                     gridAveragePrice={gridAveragePrice}
                     gridTotalQuantity={gridTotalQuantity}
                     gridInvestment={gridInvestment}
-                    vCoins={vCoins}
-                    vValue={vValue}
-                    riskValue={riskValue}
-                    rrRatio={rrRatio}
+                    vCoins={calculationResults.positionSize || calculationResults.positionLots || calculationResults.shares || 0}
+                    vValue={calculationResults.positionValue || 0}
+                    riskValue={calculationResults.riskAmount || 0}
+                    rrRatio={calculationResults.tpResults?.[0]?.rrRatio || calculationResults.rrRatio || 0}
                     instrument={instrument}
                     currentPriceStep={currentPriceStep}
                     notionStatus={notionStatus}
                     isSendingToNotion={isSendingToNotion}
                     status={status}
+                    // Дополнительные данные из новой системы
+                    calculationResults={calculationResults}
+                    calculatorType={calculationResults.calculatorType}
+                    marginRequired={calculationResults.marginRequired}
+                    freeMargin={calculationResults.freeMargin}
+                    pipValue={calculationResults.pipValuePerLot}
+                    stopLossPips={calculationResults.stopLossPips}
                 />
             )}
 
