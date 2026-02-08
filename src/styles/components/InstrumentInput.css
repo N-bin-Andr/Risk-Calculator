@@ -1,0 +1,316 @@
+/* src/styles/components/InstrumentInput.css */
+/* === СТИЛИ ДЛЯ КОМПОНЕНТА INSTRUMENTINPUT === */
+
+/* Основной контейнер */
+.instrument-input-container {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+/* Обертка для поля ввода и кнопки настроек */
+.instrument-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* Поле ввода инструмента */
+.instrument-input-wrapper input {
+    width: 160px;
+    min-width: 160px;
+    padding: 4px 35px 4px 8px;
+    font-size: 14px;
+    box-sizing: border-box;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.instrument-input-wrapper input:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+.instrument-input-wrapper input.input-error {
+    border-color: #dc3545;
+    background-color: #fff5f5;
+}
+
+/* Кнопка настроек инструмента */
+.instrument-settings-btn {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 2px;
+    font-size: 14px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.instrument-settings-btn:hover:not(:disabled) {
+    color: #007bff;
+    background-color: #f8f9fa;
+    transform: scale(1.1);
+}
+
+.instrument-settings-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Выпадающий список подсказок */
+.suggestions-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 160px;
+    width: 300px;
+    max-height: 400px;
+    background: white;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    animation: fadeInUp 0.2s ease-out;
+    overflow: hidden;
+}
+
+/* Заголовок подсказок */
+.suggestions-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.suggestions-title {
+    font-weight: 600;
+    font-size: 12px;
+    color: #495057;
+}
+
+.suggestions-count {
+    font-size: 11px;
+    color: #6c757d;
+    background-color: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 10px;
+}
+
+/* Список подсказок */
+.suggestions-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Элемент подсказки */
+.suggestion-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid #f8f9fa;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.suggestion-item:hover {
+    background-color: #f8f9fa;
+}
+
+.suggestion-item.selected {
+    background-color: #e8f4ff;
+    border-left: 3px solid #007bff;
+}
+
+/* Контент подсказки */
+.suggestion-content {
+    flex: 1;
+}
+
+.suggestion-name {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.suggestion-info {
+    display: flex;
+    gap: 10px;
+    font-size: 11px;
+    color: #6c757d;
+}
+
+.suggestion-count {
+    background-color: #e8f4ff;
+    color: #007bff;
+    padding: 1px 5px;
+    border-radius: 8px;
+}
+
+.suggestion-step {
+    font-family: 'Courier New', monospace;
+    color: #28a745;
+    background-color: #f8f9fa;
+    padding: 1px 5px;
+    border-radius: 4px;
+}
+
+/* Кнопки действий в подсказках */
+.suggestion-actions {
+    margin-left: 10px;
+}
+
+.suggestion-action-btn {
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 4px;
+    font-size: 12px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.suggestion-action-btn:hover {
+    color: #007bff;
+    background-color: #f8f9fa;
+}
+
+/* Подвал подсказок */
+.suggestions-footer {
+    padding: 8px 15px;
+    background-color: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+}
+
+.suggestions-hint {
+    font-size: 10px;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Быстрый выбор инструментов */
+.quick-instruments {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.quick-label {
+    display: block;
+    font-size: 12px;
+    color: #6c757d;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.quick-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.quick-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+    background-color: #e8f4ff;
+    color: #007bff;
+    border: 1px solid #cce5ff;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.quick-btn:hover:not(:disabled) {
+    background-color: #d0e7ff;
+    border-color: #007bff;
+    transform: translateY(-1px);
+}
+
+.quick-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Индикатор сохраненного инструмента */
+.saved-indicator {
+    margin-left: 5px;
+    font-size: 12px;
+    color: #28a745;
+    background-color: #d4edda;
+    padding: 1px 5px;
+    border-radius: 10px;
+    cursor: help;
+}
+
+/* Анимации */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .instrument-input-wrapper input {
+        width: 140px;
+        min-width: 140px;
+    }
+
+    .suggestions-dropdown {
+        left: 140px;
+        width: 250px;
+        max-width: calc(100vw - 160px);
+    }
+
+    .quick-buttons {
+        justify-content: center;
+    }
+
+    .quick-btn {
+        flex: 1;
+        min-width: 60px;
+        text-align: center;
+    }
+}
+
+/* Для очень маленьких экранов */
+@media (max-width: 480px) {
+    .instrument-input-wrapper input {
+        width: 120px;
+        min-width: 120px;
+    }
+
+    .suggestions-dropdown {
+        left: 120px;
+        width: 200px;
+    }
+
+    .suggestion-item {
+        padding: 8px 10px;
+    }
+
+    .suggestion-name {
+        font-size: 13px;
+    }
+
+    .suggestion-info {
+        flex-direction: column;
+        gap: 3px;
+    }
+}
