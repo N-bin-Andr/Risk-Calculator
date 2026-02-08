@@ -1,6 +1,8 @@
+// src/components/Calculator/CalculationResults.jsx
+// В CalculationResults.jsx - правильный импорт:
+import { formatNumber, formatCurrency } from '../../utils/formatters';
+import { getStatusType, getStatusDisplay } from '../../utils/helpers'; // Только из helpers.js
 
-import React from 'react';
-import '../../styles/components/CalculationResults.css';
 
 const CalculationResults = ({
     gridEnabled,
@@ -21,40 +23,11 @@ const CalculationResults = ({
     status
 }) => {
 
-    // Форматирование чисел
-    const formatNumber = (num, decimals = 8) => {
-        if (num === null || num === undefined || isNaN(num)) return '—';
-        return parseFloat(num).toFixed(decimals);
-    };
+    // Определение типа статуса для стилей (используем утилиту)
+    const statusType = getStatusType(status);
 
-    // Определение типа статуса для стилей
-    const getStatusType = () => {
-        if (!status) return 'info';
-
-        const statusLower = status.toLowerCase();
-        if (statusLower.includes('запланирован') || statusLower.includes('открыт')) {
-            return 'planned';
-        } else if (statusLower.includes('отменён')) {
-            return 'cancelled';
-        } else if (statusLower.includes('завершен')) {
-            return 'completed';
-        }
-        return 'info';
-    };
-
-    // Получение текста статуса с иконкой
-    const getStatusDisplay = () => {
-        switch (getStatusType()) {
-            case 'planned':
-                return '📅 Запланирован';
-            case 'cancelled':
-                return '❌ Отменён';
-            case 'completed':
-                return '✅ Завершен';
-            default:
-                return status || '📅 Запланирован';
-        }
-    };
+    // Получение текста статуса с иконкой (используем утилиту)
+    const statusDisplayText = getStatusDisplayHelper(status);
 
     return (
         <fieldset className="form-section calculation-results-section">
@@ -73,8 +46,8 @@ const CalculationResults = ({
 
                 {/* Статус сделки */}
                 <div className="status-display">
-                    <div className={`status-badge status-${getStatusType()}`}>
-                        {getStatusDisplay()}
+                    <div className={`status-badge status-${statusType}`}>
+                        {statusDisplayText}
                     </div>
                 </div>
 
@@ -117,12 +90,12 @@ const CalculationResults = ({
 
                             <div className="result-item">
                                 <span className="result-label">Размер позиции (USDT):</span>
-                                <span className="result-value">{formatNumber(vValue, 2)} USDT</span>
+                                <span className="result-value">{formatCurrency(vValue)}</span>
                             </div>
 
                             <div className="result-item">
                                 <span className="result-label">Риск в USDT:</span>
-                                <span className="result-value">{formatNumber(riskValue, 2)} USDT</span>
+                                <span className="result-value">{formatCurrency(riskValue)}</span>
                             </div>
 
                             {rrRatio && (
@@ -158,12 +131,12 @@ const CalculationResults = ({
 
                                 <div className="summary-item">
                                     <span className="summary-label">Общая инвестиция:</span>
-                                    <span className="summary-value">{formatNumber(gridInvestment, 2)} USDT</span>
+                                    <span className="summary-value">{formatCurrency(gridInvestment)}</span>
                                 </div>
 
                                 <div className="summary-item">
                                     <span className="summary-label">Риск в USDT:</span>
-                                    <span className="summary-value">{formatNumber(riskValue, 2)} USDT</span>
+                                    <span className="summary-value">{formatCurrency(riskValue)}</span>
                                 </div>
                             </div>
                         </div>
@@ -208,7 +181,7 @@ const CalculationResults = ({
                                                 </td>
                                                 <td className="order-quantity">{formatNumber(gridQuantities[index])}</td>
                                                 <td className="order-amount">
-                                                    {gridQuantities[index] ? formatNumber(gridQuantities[index] * price, 2) : '—'} USDT
+                                                    {gridQuantities[index] ? formatCurrency(gridQuantities[index] * price) : '—'}
                                                 </td>
                                             </tr>
                                         ))}
@@ -230,7 +203,7 @@ const CalculationResults = ({
                                                 <strong>{formatNumber(gridTotalQuantity)}</strong>
                                             </td>
                                             <td>
-                                                <strong>{formatNumber(gridInvestment, 2)} USDT</strong>
+                                                <strong>{formatCurrency(gridInvestment)}</strong>
                                             </td>
                                         </tr>
                                     </tfoot>

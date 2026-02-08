@@ -1,6 +1,9 @@
-
+// src/components/Calculator/RiskManagementPanel.jsx
 import React, { useState, useEffect } from 'react';
 import '../../styles/components/RiskManagement.css';
+import { calculateRiskAmount, getRiskRecommendation } from '../../utils/helpers';
+import { validateStopLoss } from '../../utils/validators';
+import { formatCurrency } from '../../utils/formatters';
 
 const RiskManagementPanel = ({
     deposit,
@@ -62,61 +65,21 @@ const RiskManagementPanel = ({
         }
     };
 
-    // Обработчик изменения Stop Loss
+    // Обработчик изменения Stop Loss с использованием валидатора
     const handleSlChange = (value) => {
         setLocalSlPrice(value);
         dispatch({ type: 'SET_FIELD', field: 'slPrice', value: value });
 
-        const SL = parseFloat(value);
-        const EP = parseFloat(entryPrice);
-
-        if (!value || isNaN(SL) || isNaN(EP)) {
-            dispatch({ type: 'SET_FIELD', field: 'slError', value: '' });
-            return;
-        }
-
-        if (SL === EP) {
-            dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL не должен совпадать с ценой входа' });
-        } else if (direction === 'long' && SL > EP) {
-            dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть ниже цены входа при Long позиции' });
-        } else if (direction === 'short' && SL < EP) {
-            dispatch({ type: 'SET_FIELD', field: 'slError', value: 'SL должен быть выше цены входа при Short позиции' });
-        } else {
-            dispatch({ type: 'SET_FIELD', field: 'slError', value: '' });
-        }
+        // Используем централизованный валидатор
+        const error = validateStopLoss(value, entryPrice, direction);
+        dispatch({ type: 'SET_FIELD', field: 'slError', value: error });
     };
 
-    // Расчет риска в USDT
-    const calculateRiskAmount = () => {
-        const dep = parseFloat(localDeposit);
-        const risk = parseFloat(localRiskSize);
+    // Расчет риска в USDT с использованием утилиты
+    const riskAmount = calculateRiskAmount(localDeposit, localRiskSize);
 
-        if (isNaN(dep) || isNaN(risk) || dep <= 0 || risk <= 0) {
-            return 0;
-        }
-
-        return (dep * (risk / 100)).toFixed(2);
-    };
-
-    // Рекомендации по риску
-    const getRiskRecommendation = () => {
-        const risk = parseFloat(localRiskSize);
-
-        if (isNaN(risk)) return null;
-
-        if (risk <= 1) {
-            return { text: 'Консервативный риск', color: '#28a745', emoji: '🟢' };
-        } else if (risk <= 3) {
-            return { text: 'Умеренный риск', color: '#ffc107', emoji: '🟡' };
-        } else if (risk <= 5) {
-            return { text: 'Агрессивный риск', color: '#fd7e14', emoji: '🟠' };
-        } else {
-            return { text: 'Высокий риск', color: '#dc3545', emoji: '🔴' };
-        }
-    };
-
-    const riskRecommendation = getRiskRecommendation();
-    const riskAmount = calculateRiskAmount();
+    // Получение рекомендации по риску с использованием утилиты
+    const riskRecommendation = getRiskRecommendation(localRiskSize);
 
     return (
         <fieldset className="form-section risk-management-section">
@@ -127,7 +90,7 @@ const RiskManagementPanel = ({
                 <div className="risk-stat-item">
                     <span className="risk-stat-label">Риск в USDT:</span>
                     <span className="risk-stat-value">
-                        {riskAmount > 0 ? `$${riskAmount}` : '—'}
+                        {riskAmount > 0 ? formatCurrency(riskAmount) : '—'}
                     </span>
                 </div>
                 {riskRecommendation && (
