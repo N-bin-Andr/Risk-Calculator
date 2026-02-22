@@ -1,4 +1,4 @@
-// src/calculations/index.js (обратите внимание - теперь путь src/calculations/, не src/utils/calculations/)
+// src/calculations/index.js
 
 /**
  * Фасадный модуль для доступа ко всем специализированным калькуляторам
@@ -9,20 +9,20 @@
 
 import { detectInstrumentType } from './types/instrumentTypes';
 
-// Импортируем специализированные калькуляторы
+// Импортируем специализированные калькуляторы (только существующие)
 import ForexCalculator from './calculators/ForexCalculator';
 import CryptoCalculator from './calculators/CryptoCalculator';
 import StockCalculator from './calculators/StockCalculator';
-import FuturesCalculator from './calculators/FuturesCalculator';
-import CFDCalculator from './calculators/CFDsCalculator';
+// import FuturesCalculator from './calculators/FuturesCalculator'; // Будет добавлен позже
+// import CFDCalculator from './calculators/CFDsCalculator'; // Будет добавлен позже
 
 // Регистр калькуляторов по типам инструментов
 const CALCULATORS = {
     forex: ForexCalculator,
     crypto: CryptoCalculator,
     stocks: StockCalculator,
-    futures: FuturesCalculator,
-    cfds: CFDCalculator
+    // futures: FuturesCalculator,
+    // cfds: CFDCalculator
 };
 
 /**
@@ -195,21 +195,21 @@ export {
     ForexCalculator,
     CryptoCalculator,
     StockCalculator,
-    FuturesCalculator,
-    CFDCalculator
+    // FuturesCalculator,
+    // CFDCalculator
 };
 
-// Экспортируем утилиты
-export * from './helpers/lotCalculations';
-export * from './helpers/marginCalculations';
-export * from './helpers/commissionCalculations';
-export * from './helpers/riskCalculations';
+// Экспортируем утилиты (закомментировано до создания файлов)
+// export * from './helpers/lotCalculations';
+// export * from './helpers/marginCalculations';
+// export * from './helpers/commissionCalculations';
+// export * from './helpers/riskCalculations';
 
 // Экспортируем типы и классификаторы
 export * from './types/instrumentTypes';
-export * from './types/forexPairs';
-export * from './types/cryptoPairs';
-export * from './types/stockSymbols';
+// export * from './types/forexPairs';
+// export * from './types/cryptoPairs';
+// export * from './types/stockSymbols';
 
 // Экспорт для обратной совместимости - теперь это просто алиас
 export { calculateInstrumentReport as calculateReport };
