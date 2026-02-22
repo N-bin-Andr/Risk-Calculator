@@ -1,7 +1,7 @@
 // src/components/Calculator/InstrumentInput.jsx
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useInstrumentHistory } from '../../hooks';
+import { useInstrumentHistory, useDebounce } from '../../hooks';
 import '../../styles/components/InstrumentInput.css';
 import { validateInstrument } from '../../utils/validators';
 
@@ -15,31 +15,47 @@ const InstrumentInput = ({
     historySuggestions,
     onInstrumentSelect,
     onOpenSettings,
-    getSuggestions  // Добавляем пропс
+    getSuggestions
 }) => {
     const [localInstrument, setLocalInstrument] = useState(instrument || '');
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [filteredSuggestions, setFilteredSuggestions] = useState([]);
     const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+    const [isSearching, setIsSearching] = useState(false);
+
     const inputRef = useRef(null);
     const suggestionsRef = useRef(null);
+
+    // Применяем дебаунс для поиска
+    const debouncedSearchTerm = useDebounce(localInstrument, 300);
 
     // Синхронизация с родительским состоянием
     useEffect(() => {
         setLocalInstrument(instrument || '');
     }, [instrument]);
 
-    // Фильтрация подсказок при изменении ввода
+    // Фильтрация подсказок с использованием дебаунсированного значения
     useEffect(() => {
-        if (localInstrument.trim() && getSuggestions) {
-            const suggestions = getSuggestions(localInstrument);
-            setFilteredSuggestions(suggestions);
-            setShowSuggestions(suggestions.length > 0);
-        } else {
-            setFilteredSuggestions([]);
-            setShowSuggestions(false);
-        }
-    }, [localInstrument, getSuggestions]);
+        const fetchSuggestions = async () => {
+            if (debouncedSearchTerm.trim() && getSuggestions) {
+                setIsSearching(true);
+
+                // Имитация задержки или реальный API вызов
+                setTimeout(() => {
+                    const suggestions = getSuggestions(debouncedSearchTerm);
+                    setFilteredSuggestions(suggestions);
+                    setShowSuggestions(suggestions.length > 0);
+                    setIsSearching(false);
+                }, 100);
+            } else {
+                setFilteredSuggestions([]);
+                setShowSuggestions(false);
+                setIsSearching(false);
+            }
+        };
+
+        fetchSuggestions();
+    }, [debouncedSearchTerm, getSuggestions]);
 
     // Закрытие подсказок при клике вне компонента
     useEffect(() => {
@@ -132,6 +148,11 @@ const InstrumentInput = ({
                             📈
                         </span>
                     )}
+                    {isSearching && (
+                        <span className="searching-indicator" title="Поиск...">
+                            🔍
+                        </span>
+                    )}
                 </label>
 
                 <div className="instrument-input-wrapper" ref={inputRef}>
@@ -144,7 +165,7 @@ const InstrumentInput = ({
                         onKeyDown={handleKeyDown}
                         disabled={!isDirectionChosen}
                         placeholder="BTCUSDT"
-                        className={instrumentError ? 'input-error' : ''}
+                        className={`${instrumentError ? 'input-error' : ''} ${isSearching ? 'searching' : ''}`}
                         title={!isDirectionChosen ? tooltipText : 'Введите название инструмента (например: BTCUSDT)'}
                         autoComplete="off"
                     />
@@ -168,8 +189,16 @@ const InstrumentInput = ({
                 <span className="error-text">{instrumentError}</span>
             )}
 
+            {/* Индикатор поиска */}
+            {isSearching && (
+                <div className="searching-message">
+                    <span className="searching-spinner"></span>
+                    Поиск инструментов...
+                </div>
+            )}
+
             {/* Подсказки */}
-            {showSuggestions && filteredSuggestions.length > 0 && (
+            {showSuggestions && filteredSuggestions.length > 0 && !isSearching && (
                 <div className="suggestions-dropdown" ref={suggestionsRef}>
                     <div className="suggestions-header">
                         <span className="suggestions-title">История инструментов:</span>
@@ -225,25 +254,6 @@ const InstrumentInput = ({
                     </div>
                 </div>
             )}
-
-            {/* Быстрый доступ к популярным инструментам */}
-            <div className="quick-instruments">
-                <span className="quick-label">Быстрый выбор:</span>
-                <div className="quick-buttons">
-                    {['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT'].map((symbol) => (
-                        <button
-                            key={symbol}
-                            type="button"
-                            className="quick-btn"
-                            onClick={() => handleInstrumentChange(symbol)}
-                            disabled={!isDirectionChosen}
-                            title={`Выбрать ${symbol}`}
-                        >
-                            {symbol}
-                        </button>
-                    ))}
-                </div>
-            </div>
         </div>
     );
 };
