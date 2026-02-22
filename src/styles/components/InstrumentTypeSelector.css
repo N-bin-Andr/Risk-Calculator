@@ -1,0 +1,258 @@
+/* src/styles/components/InstrumentTypeSelector.css */
+
+.instrument-type-selector {
+    margin: 20px 0;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.instrument-type-selector.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.selector-header {
+    margin-bottom: 20px;
+}
+
+.selector-header h3 {
+    margin: 0 0 8px 0;
+    color: #2c5282;
+    font-size: 18px;
+}
+
+.selector-description {
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.category-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.category-card:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+}
+
+.category-card.expanded {
+    border-color: #007bff;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+}
+
+.category-header {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    cursor: pointer;
+    background-color: #f8f9fa;
+    transition: background-color 0.2s;
+}
+
+.category-header:hover {
+    background-color: #e8f4ff;
+}
+
+.category-icon {
+    font-size: 24px;
+    margin-right: 12px;
+}
+
+.category-info {
+    flex: 1;
+}
+
+.category-name {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    color: #495057;
+}
+
+.category-hint {
+    font-size: 11px;
+    color: #6c757d;
+}
+
+.category-arrow {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.category-types {
+    padding: 10px;
+    border-top: 1px solid #dee2e6;
+    background-color: white;
+}
+
+.type-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    margin-bottom: 5px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.type-item:hover {
+    background-color: #f8f9fa;
+}
+
+.type-item.selected {
+    background-color: #e8f4ff;
+    border-left: 3px solid #007bff;
+}
+
+.type-item:last-child {
+    margin-bottom: 0;
+}
+
+.type-icon {
+    font-size: 18px;
+    margin-right: 12px;
+}
+
+.type-info {
+    flex: 1;
+}
+
+.type-name {
+    font-size: 14px;
+    color: #495057;
+}
+
+.type-selected-indicator {
+    font-size: 11px;
+    color: #007bff;
+    margin-top: 2px;
+}
+
+.instrument-details {
+    margin: 25px 0;
+    padding: 20px;
+    background-color: white;
+    border: 1px solid #cce5ff;
+    border-radius: 8px;
+}
+
+.instrument-details h4 {
+    margin: 0 0 15px 0;
+    color: #2c5282;
+    font-size: 16px;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+.detail-label {
+    font-weight: 500;
+    color: #495057;
+    font-size: 12px;
+}
+
+.detail-value {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: #28a745;
+    background-color: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.auto-detection-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #e8f4ff;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.detection-icon {
+    font-size: 24px;
+}
+
+.detection-text {
+    flex: 1;
+    font-size: 14px;
+    color: #2c5282;
+}
+
+.detection-hint {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 4px;
+}
+
+.selector-tips {
+    margin-top: 25px;
+    padding: 15px;
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+}
+
+.selector-tips h4 {
+    margin: 0 0 10px 0;
+    color: #856404;
+    font-size: 15px;
+}
+
+.selector-tips ul {
+    margin: 0;
+    padding-left: 20px;
+    color: #856404;
+    font-size: 13px;
+}
+
+.selector-tips li {
+    margin-bottom: 5px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .instrument-type-selector {
+        padding: 15px;
+    }
+
+    .categories-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .auto-detection-info {
+        flex-direction: column;
+        text-align: center;
+    }
+}
