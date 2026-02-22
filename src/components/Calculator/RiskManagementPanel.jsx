@@ -1,5 +1,7 @@
 // src/components/Calculator/RiskManagementPanel.jsx
+
 import React, { useState, useEffect } from 'react';
+import { useLocalStorage } from '../../hooks';
 import '../../styles/components/RiskManagement.css';
 import { calculateRiskAmount, getRiskRecommendation } from '../../utils/helpers';
 import { validateStopLoss } from '../../utils/validators';
@@ -18,18 +20,22 @@ const RiskManagementPanel = ({
     direction,
     tooltipText
 }) => {
-    const [localDeposit, setLocalDeposit] = useState(deposit);
-    const [localRiskSize, setLocalRiskSize] = useState(riskSize);
+    // Используем useLocalStorage для сохранения значений
+    const [savedDeposit, setSavedDeposit] = useLocalStorage('lastDeposit', '1000');
+    const [savedRiskSize, setSavedRiskSize] = useLocalStorage('lastRiskSize', '2');
+
+    const [localDeposit, setLocalDeposit] = useState(deposit || savedDeposit);
+    const [localRiskSize, setLocalRiskSize] = useState(riskSize || savedRiskSize);
     const [localSlPrice, setLocalSlPrice] = useState(slPrice);
 
     // Синхронизация с родительским состоянием
     useEffect(() => {
-        setLocalDeposit(deposit);
-    }, [deposit]);
+        setLocalDeposit(deposit || savedDeposit);
+    }, [deposit, savedDeposit]);
 
     useEffect(() => {
-        setLocalRiskSize(riskSize);
-    }, [riskSize]);
+        setLocalRiskSize(riskSize || savedRiskSize);
+    }, [riskSize, savedRiskSize]);
 
     useEffect(() => {
         setLocalSlPrice(slPrice);
@@ -44,8 +50,7 @@ const RiskManagementPanel = ({
     // Обработчик блюра депозита
     const handleDepositBlur = () => {
         if (localDeposit) {
-            localStorage.setItem('lastDeposit', localDeposit);
-            localStorage.setItem('savedDeposit', localDeposit);
+            setSavedDeposit(localDeposit);
             dispatch({ type: 'SET_FIELD', field: 'deposit', value: localDeposit });
         }
     };
@@ -59,8 +64,7 @@ const RiskManagementPanel = ({
     // Обработчик блюра риска
     const handleRiskBlur = () => {
         if (localRiskSize) {
-            localStorage.setItem('lastRiskSize', localRiskSize);
-            localStorage.setItem('savedRiskSize', localRiskSize);
+            setSavedRiskSize(localRiskSize);
             dispatch({ type: 'SET_FIELD', field: 'riskSize', value: localRiskSize });
         }
     };
@@ -140,7 +144,7 @@ const RiskManagementPanel = ({
                     <label htmlFor="deposit-input">
                         Депозит (USDT):
                         {localDeposit && (
-                            <span className="saved-indicator" title="Сохранено в браузере">
+                            <span className="saved-indicator" title="Автоматически сохраняется">
                                 💾
                             </span>
                         )}
@@ -159,7 +163,7 @@ const RiskManagementPanel = ({
                         />
                     </div>
                     <div className="input-hint">
-                        Сумма капитала для сделки
+                        Сумма капитала для сделки (сохраняется)
                     </div>
                 </div>
 
@@ -168,7 +172,7 @@ const RiskManagementPanel = ({
                     <label htmlFor="risk-input">
                         Риск на сделку (%):
                         {localRiskSize && (
-                            <span className="saved-indicator" title="Сохранено в браузере">
+                            <span className="saved-indicator" title="Автоматически сохраняется">
                                 💾
                             </span>
                         )}
@@ -188,7 +192,7 @@ const RiskManagementPanel = ({
                         <span className="input-suffix">%</span>
                     </div>
                     <div className="input-hint">
-                        От 0.1% до 5% рекомендуется
+                        От 0.1% до 5% рекомендуется (сохраняется)
                     </div>
                 </div>
             </div>
