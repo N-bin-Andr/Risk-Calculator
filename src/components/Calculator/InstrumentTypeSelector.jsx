@@ -1,4 +1,5 @@
 // src/components/Calculator/InstrumentTypeSelector.jsx
+
 import React, { useState, useEffect } from 'react';
 import '../../styles/components/InstrumentTypeSelector.css';
 
@@ -72,7 +73,7 @@ export const INSTRUMENT_DETAILS = {
         description: 'Пары с USD как основной валютой',
         examples: ['EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF', 'AUD/USD', 'USD/CAD', 'NZD/USD'],
         lotSize: 100000,
-        marginRequirement: 0.01, // 1:100 leverage
+        marginRequirement: 0.01,
         priceStep: 0.0001,
         minTradeSize: 0.01,
         maxTradeSize: 100,
@@ -98,7 +99,7 @@ export const INSTRUMENT_DETAILS = {
         description: 'Непосредственная покупка криптовалют',
         examples: ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'XRP/USDT', 'ADA/USDT'],
         lotSize: 1,
-        marginRequirement: 1, // Spot - no leverage by default
+        marginRequirement: 1,
         priceStep: 0.01,
         minTradeSize: 0.0001,
         maxTradeSize: 1000,
@@ -111,7 +112,7 @@ export const INSTRUMENT_DETAILS = {
         description: 'Контракты на будущую поставку криптовалют',
         examples: ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT'],
         lotSize: 1,
-        marginRequirement: 0.05, // 20x leverage
+        marginRequirement: 0.05,
         priceStep: 0.01,
         minTradeSize: 0.001,
         maxTradeSize: 100,
@@ -125,7 +126,7 @@ export const INSTRUMENT_DETAILS = {
         description: 'Акции американских компаний',
         examples: ['AAPL', 'TSLA', 'AMZN', 'GOOGL', 'MSFT', 'NVDA'],
         lotSize: 1,
-        marginRequirement: 0.5, // 2x leverage
+        marginRequirement: 0.5,
         priceStep: 0.01,
         minTradeSize: 1,
         maxTradeSize: 10000,
@@ -183,9 +184,7 @@ const InstrumentTypeSelector = ({
         const instrumentUpper = instrument.toUpperCase();
         let detectedType = null;
 
-        // Определяем тип по паттернам
         if (instrumentUpper.includes('/')) {
-            // Forex или металлы
             if (instrumentUpper.includes('XAU') || instrumentUpper.includes('XAG') ||
                 instrumentUpper.includes('XPT') || instrumentUpper.includes('XPD')) {
                 detectedType = 'metals';
@@ -195,13 +194,10 @@ const InstrumentTypeSelector = ({
             }
         } else if (instrumentUpper.includes('USDT') || instrumentUpper.includes('BTC') ||
                    instrumentUpper.includes('ETH') || instrumentUpper.includes('BNB')) {
-            // Криптовалюты
-            detectedType = instrumentUpper.includes('USDT') ? 'crypto_spot' : 'crypto_spot';
+            detectedType = 'crypto_spot';
         } else if (instrumentUpper.length <= 5 && !instrumentUpper.includes('.')) {
-            // Акции (тикеры)
             detectedType = 'stocks_us';
         } else if (instrumentUpper.includes('.MX') || instrumentUpper.includes('.ME')) {
-            // Индексы
             detectedType = 'indices_world';
         }
 
@@ -212,24 +208,19 @@ const InstrumentTypeSelector = ({
         }
     }, [instrument]);
 
-    // Обработчик выбора категории
     const handleCategoryToggle = (category) => {
         setExpandedCategory(expandedCategory === category ? null : category);
     };
 
-    // Обработчик выбора типа инструмента
     const handleTypeSelect = (typeId) => {
         if (onTypeSelect) {
             onTypeSelect(typeId);
-
-            // Устанавливаем детали выбранного типа
             if (INSTRUMENT_DETAILS[typeId]) {
                 setSelectedDetails(INSTRUMENT_DETAILS[typeId]);
             }
         }
     };
 
-    // Получение иконки для категории
     const getCategoryIcon = (category) => {
         switch (category) {
             case 'FOREX': return '💱';
@@ -295,7 +286,6 @@ const InstrumentTypeSelector = ({
                 ))}
             </div>
 
-            {/* Детальная информация о выбранном типе */}
             {selectedDetails && (
                 <div className="instrument-details">
                     <h4>📋 Параметры выбранного типа:</h4>
@@ -342,7 +332,6 @@ const InstrumentTypeSelector = ({
                 </div>
             )}
 
-            {/* Автоматическое определение типа */}
             {instrument && selectedDetails && (
                 <div className="auto-detection-info">
                     <div className="detection-icon">🤖</div>
@@ -355,7 +344,6 @@ const InstrumentTypeSelector = ({
                 </div>
             )}
 
-            {/* Подсказки */}
             <div className="selector-tips">
                 <h4>💡 Зачем выбирать тип инструмента?</h4>
                 <ul>
@@ -370,4 +358,5 @@ const InstrumentTypeSelector = ({
 };
 
 export default InstrumentTypeSelector;
-export { INSTRUMENT_TYPES, INSTRUMENT_CATEGORIES, INSTRUMENT_DETAILS };
+// Удаляем дублирующий экспорт!
+// export { INSTRUMENT_TYPES, INSTRUMENT_CATEGORIES, INSTRUMENT_DETAILS };
