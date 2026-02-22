@@ -1,6 +1,6 @@
 
 /* === СТИЛИ ДЛЯ КОМПОНЕНТА GRIDSETTINGS === */
-
+/* src/styles/components/GridSettings.css */
 /* Стиль для автоматически рассчитанного поля */
 .auto-calculated-field {
     background-color: #f0f8ff !important;

@@ -43,3 +43,4 @@ class CryptoCalculator {
 }
 
 export default CryptoCalculator;
+

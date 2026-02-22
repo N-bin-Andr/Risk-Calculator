@@ -1,3 +1,5 @@
+// src/utils/calculateReport.js
+
 export const getDirectionLabel = (dir) => {
     if (!dir) return "—";
     return dir.toLowerCase() === "long" ? "Long" : "Short";

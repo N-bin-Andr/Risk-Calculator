@@ -1,8 +1,7 @@
-// src/components/Calculator/CalculationResults.jsx
-// В CalculationResults.jsx - правильный импорт:
+import React from 'react';
 import { formatNumber, formatCurrency } from '../../utils/formatters';
-import { getStatusType, getStatusDisplay } from '../../utils/helpers'; // Только из helpers.js
-
+import { getStatusType, getStatusDisplay } from '../../utils/helpers';
+import '../../styles/components/CalculationResults.css';
 
 const CalculationResults = ({
     gridEnabled,
@@ -26,8 +25,8 @@ const CalculationResults = ({
     // Определение типа статуса для стилей (используем утилиту)
     const statusType = getStatusType(status);
 
-    // Получение текста статуса с иконкой (используем утилиту)
-    const statusDisplayText = getStatusDisplayHelper(status);
+    // Получаем отображаемый текст статуса с иконкой
+    const statusDisplayText = getStatusDisplay(status);
 
     return (
         <fieldset className="form-section calculation-results-section">

@@ -1,4 +1,4 @@
-
+// src/components/Calculator/TakeProfitManager.jsx
 import React from 'react';
 import '../../styles/components/TakeProfitManager.css';
 

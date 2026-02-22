@@ -1,3 +1,5 @@
+// src/utils/validateCalculator.js
+
 export function validateFields(state) {
     const errors = {};
 

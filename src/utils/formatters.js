@@ -82,6 +82,7 @@ export const formatDate = (date, includeTime = true) => {
 };
 
 /**
+ * src/utils/formatters.js
  * Сокращенное форматирование больших чисел (K, M, B)
  * @param {number|string} num - Число
  * @returns {string} Сокращенное число

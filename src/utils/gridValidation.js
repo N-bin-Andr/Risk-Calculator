@@ -1,3 +1,5 @@
+// src/utils/gridValidation.js
+
 export const validateGridInput = (gridDistribution, gridOrdersCount) => {
     const errors = [];
     const warnings = [];

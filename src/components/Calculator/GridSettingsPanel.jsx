@@ -1,3 +1,4 @@
+// src/components/Calculator/GridSettingsPanel.jsx
 
 import React, { useCallback } from 'react';
 import '../../styles/components/GridSettings.css';
