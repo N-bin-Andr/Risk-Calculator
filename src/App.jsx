@@ -1,10 +1,12 @@
+// src/App.jsx
 
-// Все эти файлы должны экспортировать компонент по умолчанию (export default)
-import Calculator from './components/Calculator'; // Работает с index.js из пункта 1
+import React, { useState, useEffect } from 'react';
+import Calculator from './components/Calculator';
 import Settings from './components/Settings';
 import History from './components/History';
 import Templates from './components/Templates';
 import Help from './components/Help';
+import './styles/styles.css';
 
 const App = () => {
     const [activeSection, setActiveSection] = useState('calculator');
@@ -111,7 +113,6 @@ const App = () => {
                         <button
                             className="theme-toggle"
                             onClick={() => {
-                                // Здесь будет переключение темы
                                 alert('Переключение темы будет реализовано позже');
                             }}
                             aria-label="Toggle theme"
