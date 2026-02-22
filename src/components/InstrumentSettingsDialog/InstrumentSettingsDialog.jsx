@@ -1,5 +1,6 @@
+// src/components/InstrumentSettingsDialog/InstrumentSettingsDialog.jsx
+
 import React, { useState, useEffect } from 'react';
-import '../styles/styles.css';
 
 const InstrumentSettingsDialog = ({
     isOpen,
@@ -51,17 +52,21 @@ const InstrumentSettingsDialog = ({
         // Если поле пустое, сохраняем null (используется значение по умолчанию)
         const valueToSave = priceStep === '' || priceStep === null ? null : parseFloat(priceStep);
 
-        onSave(instrumentName, valueToSave);
+        if (onSave) {
+            onSave(instrumentName, valueToSave);
+        }
         onClose();
     };
 
     const handleCancel = () => {
-        onCancel && onCancel();
+        if (onCancel) {
+            onCancel();
+        }
         onClose();
     };
 
     const getDefaultStepSuggestion = () => {
-        const lowerName = instrumentName.toLowerCase();
+        const lowerName = instrumentName ? instrumentName.toLowerCase() : '';
 
         if (lowerName.includes('btc') || lowerName.includes('eth') ||
             lowerName.includes('usdt') || lowerName.includes('bnb')) {
@@ -90,7 +95,7 @@ const InstrumentSettingsDialog = ({
 
                 <div className="modal-content">
                     <div className="instrument-info">
-                        <h4>{instrumentName}</h4>
+                        <h4>{instrumentName || 'Инструмент'}</h4>
                         <p className="instrument-hint">
                             Настройте параметры для точного расчета пунктов (пипсов)
                         </p>
@@ -125,7 +130,7 @@ const InstrumentSettingsDialog = ({
                         )}
 
                         <div className="field-hint">
-                            <p>Рекомендуемое значение для {instrumentName}: {getDefaultStepSuggestion()}</p>
+                            <p>Рекомендуемое значение: {getDefaultStepSuggestion()}</p>
                             <p className="small-text">
                                 Шаг цены влияет на расчет пунктов (пипсов) между ценой входа и SL.
                                 Оставьте поле пустым для использования значения по умолчанию.
@@ -137,16 +142,13 @@ const InstrumentSettingsDialog = ({
                         <h5>📋 Примеры шагов цены:</h5>
                         <ul>
                             <li>
-                                <strong>Криптовалюты (BTCUSDT, ETHUSDT):</strong> 0.01 (1 цент)
+                                <strong>Криптовалюты (BTCUSDT, ETHUSDT):</strong> 0.01
                             </li>
                             <li>
-                                <strong>Форекс (EURUSD, GBPUSD):</strong> 0.0001 (1 пипс)
+                                <strong>Форекс (EURUSD, GBPUSD):</strong> 0.0001
                             </li>
                             <li>
-                                <strong>Акции (AAPL.US, TSLA.US):</strong> 0.01 (1 цент)
-                            </li>
-                            <li>
-                                <strong>Индексы (SPX, NASDAQ):</strong> 0.1 (10 центов)
+                                <strong>Акции (AAPL, TSLA):</strong> 0.01
                             </li>
                         </ul>
                     </div>
