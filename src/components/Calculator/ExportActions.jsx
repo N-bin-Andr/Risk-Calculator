@@ -169,4 +169,4 @@ const ExportActions = ({
     );
 };
 
-export default ExportActions;
+export default React.memo(ExportActions);

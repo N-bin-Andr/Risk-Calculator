@@ -232,4 +232,4 @@ const CalculationResults = ({
     );
 };
 
-export default CalculationResults;
+export default React.memo(CalculationResults);

@@ -201,4 +201,4 @@ const InstrumentTypeSelector = ({
     );
 };
 
-export default InstrumentTypeSelector;
+export default React.memo(InstrumentTypeSelector);

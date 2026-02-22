@@ -226,4 +226,4 @@ const GridSettingsPanel = ({
     );
 };
 
-export default GridSettingsPanel;
+export default React.memo(GridSettingsPanel);
