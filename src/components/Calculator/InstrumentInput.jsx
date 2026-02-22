@@ -1,6 +1,7 @@
 // src/components/Calculator/InstrumentInput.jsx
+
 import React, { useState, useEffect, useRef } from 'react';
-import { useInstrumentHistory } from '../../hooks'; // Импорт из централизованного файла
+import { useInstrumentHistory } from '../../hooks';
 import '../../styles/components/InstrumentInput.css';
 import { validateInstrument } from '../../utils/validators';
 
@@ -11,8 +12,10 @@ const InstrumentInput = ({
     setInstrumentError,
     isDirectionChosen,
     tooltipText,
+    historySuggestions,
     onInstrumentSelect,
-    onOpenSettings
+    onOpenSettings,
+    getSuggestions  // Добавляем пропс
 }) => {
     const [localInstrument, setLocalInstrument] = useState(instrument || '');
     const [showSuggestions, setShowSuggestions] = useState(false);
