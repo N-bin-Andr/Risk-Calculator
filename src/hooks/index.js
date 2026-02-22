@@ -8,8 +8,8 @@
  */
 
 export { useInstrumentHistory } from './useInstrumentHistory';
+export { useDebounce } from './useDebounce';
+export { useLocalStorage } from './useLocalStorage';
 
-// Эти хуки будут добавлены позже, но экспорты уже готовы
-// export { useDebounce } from './useDebounce';
-// export { useLocalStorage } from './useLocalStorage';
+// Будет добавлен позже
 // export { useCalculator } from './useCalculator';
