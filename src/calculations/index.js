@@ -1,4 +1,5 @@
-// src/calculations/index.js
+// src/calculations/index.js (обратите внимание - теперь путь src/calculations/, не src/utils/calculations/)
+
 /**
  * Фасадный модуль для доступа ко всем специализированным калькуляторам
  *
@@ -7,7 +8,6 @@
  */
 
 import { detectInstrumentType } from './types/instrumentTypes';
-import { calculateReport as calculateBaseReport } from '../../utils/calculateReport';
 
 // Импортируем специализированные калькуляторы
 import ForexCalculator from './calculators/ForexCalculator';
@@ -55,8 +55,71 @@ export function calculateInstrumentReport(params) {
         console.log('Использую базовый расчет...');
 
         // Fallback на базовый расчет
-        return calculateBaseReport(params);
+        return fallbackCalculate(params);
     }
+}
+
+/**
+ * Запасная функция расчета (бывший calculateReport)
+ * @param {Object} params - Параметры расчета
+ * @returns {Object} Результаты расчета
+ */
+function fallbackCalculate(params) {
+    const {
+        deposit,
+        riskSize,
+        entryPrice,
+        slPrice,
+        direction,
+        instrument,
+        traderNote,
+        status,
+        isBacktest,
+        tpLevels = [],
+        gridEnabled = false,
+        gridOrdersCount = 3,
+        gridDistribution = [],
+        priceStep = null
+    } = params;
+
+    // Базовая реализация расчета
+    const D = parseFloat(deposit) || 0;
+    const R = parseFloat(riskSize) || 0;
+    const EP = parseFloat(entryPrice) || 0;
+    const SL = parseFloat(slPrice) || 0;
+
+    if (D <= 0 || R <= 0 || EP <= 0 || SL <= 0 || EP === SL) {
+        throw new Error('Некорректные параметры для расчета');
+    }
+
+    const riskAmount = D * (R / 100);
+    const priceDiff = Math.abs(EP - SL);
+    const positionSize = riskAmount / priceDiff;
+    const positionValue = positionSize * EP;
+
+    // Генерация ID отчета
+    const now = new Date();
+    const reportId = `ORD${now.getDate().toString().padStart(2,'0')}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getFullYear()}${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}${now.getSeconds().toString().padStart(2,'0')}F`;
+
+    return {
+        reportId,
+        instrument: instrument || 'Не указан',
+        date: now.toLocaleDateString('ru-RU'),
+        direction,
+        deposit: D,
+        riskSize: R,
+        riskAmount,
+        entryPrice: EP,
+        slPrice: SL,
+        positionSize,
+        positionValue,
+        tpResults: [],
+        gridEnabled,
+        gridOrdersCount: gridEnabled ? gridOrdersCount : null,
+        gridDistribution: gridEnabled ? gridDistribution : null,
+        calculatorType: 'fallback',
+        timestamp: now.toISOString()
+    };
 }
 
 /**
@@ -100,14 +163,47 @@ export function getDefaultSettings(type) {
     return Calculator.getDefaultSettings();
 }
 
+/**
+ * Получение шага цены по умолчанию для инструмента
+ * @param {string} instrument - Название инструмента
+ * @returns {number} Шаг цены по умолчанию
+ */
+export function getDefaultPriceStep(instrument) {
+    if (!instrument) return 0.01;
+
+    const lowerName = instrument.toLowerCase();
+
+    if (lowerName.includes('btc') || lowerName.includes('eth') ||
+        lowerName.includes('usdt') || lowerName.includes('bnb')) {
+        return 0.01;
+    }
+
+    if (lowerName.includes('xau') || lowerName.includes('xag') ||
+        lowerName.includes('xpt') || lowerName.includes('xpd')) {
+        return 0.01;
+    }
+
+    if (lowerName.includes('/')) {
+        return 0.0001;
+    }
+
+    return 0.01;
+}
+
 // Экспортируем специализированные калькуляторы для прямого доступа
-export { ForexCalculator, CryptoCalculator, StockCalculator, FuturesCalculator, CFDCalculator };
+export {
+    ForexCalculator,
+    CryptoCalculator,
+    StockCalculator,
+    FuturesCalculator,
+    CFDCalculator
+};
 
 // Экспортируем утилиты
-export * from './utils/lotCalculations';
-export * from './utils/marginCalculations';
-export * from './utils/commissionCalculations';
-export * from './utils/riskCalculations';
+export * from './helpers/lotCalculations';
+export * from './helpers/marginCalculations';
+export * from './helpers/commissionCalculations';
+export * from './helpers/riskCalculations';
 
 // Экспортируем типы и классификаторы
 export * from './types/instrumentTypes';
@@ -115,5 +211,5 @@ export * from './types/forexPairs';
 export * from './types/cryptoPairs';
 export * from './types/stockSymbols';
 
-// Экспорт для обратной совместимости
+// Экспорт для обратной совместимости - теперь это просто алиас
 export { calculateInstrumentReport as calculateReport };
