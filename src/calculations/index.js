@@ -9,20 +9,20 @@
 
 import { detectInstrumentType } from './types/instrumentTypes';
 
-// Импортируем специализированные калькуляторы (только существующие)
+// Импортируем специализированные калькуляторы
 import ForexCalculator from './calculators/ForexCalculator';
 import CryptoCalculator from './calculators/CryptoCalculator';
 import StockCalculator from './calculators/StockCalculator';
-// import FuturesCalculator from './calculators/FuturesCalculator'; // Будет добавлен позже
-// import CFDCalculator from './calculators/CFDsCalculator'; // Будет добавлен позже
+import FuturesCalculator from './calculators/FuturesCalculator';
+import CFDCalculator from './calculators/CFDsCalculator';
 
 // Регистр калькуляторов по типам инструментов
 const CALCULATORS = {
     forex: ForexCalculator,
     crypto: CryptoCalculator,
     stocks: StockCalculator,
-    // futures: FuturesCalculator,
-    // cfds: CFDCalculator
+    futures: FuturesCalculator,
+    cfds: CFDCalculator
 };
 
 /**
@@ -39,9 +39,10 @@ export function calculateInstrumentReport(params) {
 
     // Определяем тип инструмента, если не задан
     const detectedType = instrumentType || detectInstrumentType(instrument);
+    const category = detectedType?.category || 'crypto';
 
     // Получаем соответствующий калькулятор
-    const Calculator = CALCULATORS[detectedType?.category] || CALCULATORS.crypto;
+    const Calculator = CALCULATORS[category] || CALCULATORS.crypto;
 
     try {
         // Используем специализированный калькулятор
@@ -51,7 +52,7 @@ export function calculateInstrumentReport(params) {
             ...otherParams
         });
     } catch (error) {
-        console.warn(`Ошибка в специализированном калькуляторе (${detectedType?.category}):`, error);
+        console.warn(`Ошибка в специализированном калькуляторе (${category}):`, error);
         console.log('Использую базовый расчет...');
 
         // Fallback на базовый расчет
@@ -195,21 +196,21 @@ export {
     ForexCalculator,
     CryptoCalculator,
     StockCalculator,
-    // FuturesCalculator,
-    // CFDCalculator
+    FuturesCalculator,
+    CFDCalculator
 };
 
-// Экспортируем утилиты (закомментировано до создания файлов)
-// export * from './helpers/lotCalculations';
-// export * from './helpers/marginCalculations';
-// export * from './helpers/commissionCalculations';
-// export * from './helpers/riskCalculations';
+// Экспортируем утилиты
+export * from './helpers/lotCalculations';
+export * from './helpers/marginCalculations';
+export * from './helpers/commissionCalculations';
+export * from './helpers/riskCalculations';
 
 // Экспортируем типы и классификаторы
 export * from './types/instrumentTypes';
-// export * from './types/forexPairs';
-// export * from './types/cryptoPairs';
-// export * from './types/stockSymbols';
+export * from './types/forexPairs';
+export * from './types/cryptoPairs';
+export * from './types/stockSymbols';
 
 // Экспорт для обратной совместимости - теперь это просто алиас
 export { calculateInstrumentReport as calculateReport };
