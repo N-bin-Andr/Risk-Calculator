@@ -1,14 +1,14 @@
 // src/components/Calculator/Calculator.jsx
 import React, { useState, useEffect, useReducer, useCallback } from 'react';
 import InstrumentInput from './InstrumentInput';
-import InstrumentTypeSelector, { INSTRUMENT_DETAILS } from './InstrumentTypeSelector';
+import InstrumentTypeSelector from './InstrumentTypeSelector';
 import GridSettingsPanel from './GridSettingsPanel';
 import TakeProfitManager from './TakeProfitManager';
 import RiskManagementPanel from './RiskManagementPanel';
 import CalculationResults from './CalculationResults';
 import ExportActions from './ExportActions';
 import InstrumentSettingsDialog from '../InstrumentSettingsDialog/InstrumentSettingsDialog';
-import { useInstrumentHistory } from '../../hooks/useInstrumentHistory';
+import { useInstrumentHistory } from '../../hooks';
 import { calculatorReducer, initialState } from '../../reducers/calculatorReducer';
 import { calculateInstrumentReport, getDefaultPriceStep } from '../../calculations';
 import { validateFields } from '../../utils/validateCalculator';
