@@ -1,41 +1,17 @@
+// src/hooks/useInstrumentHistory.js
 
-// src/hooks/useInstrumentHistory.jsx
 import { useState, useEffect } from 'react';
+import { useLocalStorage } from './useLocalStorage';
 
 export function useInstrumentHistory() {
-    const [history, setHistory] = useState([]);
+    // Используем useLocalStorage вместо прямых вызовов localStorage
+    const [history, setHistory] = useLocalStorage('instrumentHistory', []);
 
-    useEffect(() => {
-        try {
-            const saved = JSON.parse(localStorage.getItem('instrumentHistory') || '[]');
-            // Проверяем, что загруженные данные имеют правильную структуру
-            const validHistory = Array.isArray(saved)
-                ? saved.filter(item =>
-                    item &&
-                    typeof item === 'object' &&
-                    item.name &&
-                    typeof item.name === 'string' &&
-                    typeof item.count === 'number'
-                ).map(item => ({
-                    ...item,
-                    // Добавляем поле priceStep если его нет
-                    priceStep: item.priceStep || null
-                }))
-                : [];
-            setHistory(validHistory);
-        } catch (error) {
-            console.error('Ошибка загрузки истории инструментов:', error);
-            setHistory([]);
-        }
-    }, []);
+    // Убираем useEffect для загрузки, так как useLocalStorage уже делает это
+    // Оставляем только для обратной совместимости, если нужно
 
     const saveToStorage = (updated) => {
-        try {
-            localStorage.setItem('instrumentHistory', JSON.stringify(updated));
-            setHistory(updated);
-        } catch (error) {
-            console.error('Ошибка сохранения истории инструментов:', error);
-        }
+        setHistory(updated);
     };
 
     const addInstrument = (name, priceStep = null) => {
@@ -44,18 +20,18 @@ export function useInstrumentHistory() {
         if (!trimmed) return;
 
         try {
-            const saved = JSON.parse(localStorage.getItem('instrumentHistory') || '[]');
-            const existing = saved.find(item => item.name === trimmed);
+            const currentHistory = history || [];
+            const existing = currentHistory.find(item => item.name === trimmed);
 
             let updated;
             if (existing) {
                 // Обновляем существующий инструмент
-                updated = saved.map(item =>
+                updated = currentHistory.map(item =>
                     item.name === trimmed ? {
                         ...item,
                         count: item.count + 1,
-                        // Обновляем priceStep только если передан (не null)
-                        priceStep: priceStep !== null ? priceStep : item.priceStep
+                        priceStep: priceStep !== null ? priceStep : item.priceStep,
+                        lastUsed: new Date().toISOString()
                     } : item
                 );
             } else {
@@ -66,7 +42,7 @@ export function useInstrumentHistory() {
                     priceStep: priceStep,
                     createdAt: new Date().toISOString(),
                     lastUsed: new Date().toISOString()
-                }, ...saved];
+                }, ...currentHistory];
             }
 
             // Сортируем по частоте использования (по убыванию)
@@ -84,12 +60,12 @@ export function useInstrumentHistory() {
 
     const updateInstrument = (name, updates) => {
         try {
-            const saved = JSON.parse(localStorage.getItem('instrumentHistory') || '[]');
-            const existingIndex = saved.findIndex(item => item.name === name);
+            const currentHistory = history || [];
+            const existingIndex = currentHistory.findIndex(item => item.name === name);
 
             if (existingIndex === -1) return false;
 
-            const updated = [...saved];
+            const updated = [...currentHistory];
             updated[existingIndex] = {
                 ...updated[existingIndex],
                 ...updates,
@@ -112,8 +88,8 @@ export function useInstrumentHistory() {
         if (!input || typeof input !== 'string') return [];
 
         try {
-            const saved = JSON.parse(localStorage.getItem('instrumentHistory') || '[]');
-            return saved
+            const currentHistory = history || [];
+            return currentHistory
                 .filter(item =>
                     item &&
                     item.name &&
@@ -133,8 +109,8 @@ export function useInstrumentHistory() {
 
     const getInstrument = (name) => {
         try {
-            const saved = JSON.parse(localStorage.getItem('instrumentHistory') || '[]');
-            return saved.find(item => item.name === name) || null;
+            const currentHistory = history || [];
+            return currentHistory.find(item => item.name === name) || null;
         } catch (error) {
             console.error('Ошибка получения инструмента:', error);
             return null;
@@ -143,7 +119,8 @@ export function useInstrumentHistory() {
 
     const deleteInstrument = (name) => {
         try {
-            const updated = history.filter(item => item.name !== name);
+            const currentHistory = history || [];
+            const updated = currentHistory.filter(item => item.name !== name);
             saveToStorage(updated);
         } catch (error) {
             console.error('Ошибка удаления инструмента:', error);
@@ -152,7 +129,8 @@ export function useInstrumentHistory() {
 
     const deleteMultipleInstruments = (names) => {
         try {
-            const updated = history.filter(item => !names.includes(item.name));
+            const currentHistory = history || [];
+            const updated = currentHistory.filter(item => !names.includes(item.name));
             saveToStorage(updated);
         } catch (error) {
             console.error('Ошибка удаления нескольких инструментов:', error);
@@ -161,15 +139,16 @@ export function useInstrumentHistory() {
 
     const exportHistoryAsJSON = () => {
         try {
-            if (history.length === 0) {
+            const currentHistory = history || [];
+            if (currentHistory.length === 0) {
                 alert('История инструментов пуста');
                 return;
             }
 
             const data = {
                 exportedAt: new Date().toISOString(),
-                totalInstruments: history.length,
-                instruments: history
+                totalInstruments: currentHistory.length,
+                instruments: currentHistory
             };
 
             const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -221,7 +200,7 @@ export function useInstrumentHistory() {
     };
 
     return {
-        history,
+        history: history || [],
         addInstrument,
         updateInstrument,
         updateInstrumentPriceStep,
