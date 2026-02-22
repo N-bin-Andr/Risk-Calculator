@@ -10,6 +10,4 @@
 export { useInstrumentHistory } from './useInstrumentHistory';
 export { useDebounce } from './useDebounce';
 export { useLocalStorage } from './useLocalStorage';
-
-// Будет добавлен позже
-// export { useCalculator } from './useCalculator';
+export { useCalculator } from './useCalculator';
