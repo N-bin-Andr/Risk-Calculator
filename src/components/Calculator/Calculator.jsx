@@ -1,4 +1,6 @@
 // src/components/Calculator/Calculator.jsx
+// Полный исправленный файл с импортами и удалением ссылок на INSTRUMENT_DETAILS
+
 import React, { useState, useEffect, useReducer, useCallback } from 'react';
 import InstrumentInput from './InstrumentInput';
 import InstrumentTypeSelector from './InstrumentTypeSelector';
@@ -71,18 +73,8 @@ const Calculator = () => {
     // Обработчик выбора типа инструмента
     const handleInstrumentTypeSelect = useCallback((typeId) => {
         setSelectedInstrumentType(typeId);
-
-        // Автоматически устанавливаем шаг цены на основе типа
-        if (typeId && INSTRUMENT_DETAILS[typeId]) {
-            const priceStep = INSTRUMENT_DETAILS[typeId].priceStep;
-            dispatch({ type: 'SET_FIELD', field: 'currentPriceStep', value: priceStep });
-
-            // Если есть выбранный инструмент, обновляем его настройки
-            if (instrument && updateInstrumentPriceStep) {
-                updateInstrumentPriceStep(instrument, priceStep);
-            }
-        }
-    }, [instrument, updateInstrumentPriceStep]);
+        // Убираем ссылку на INSTRUMENT_DETAILS - шаг цены теперь управляется через getDefaultPriceStep
+    }, []);
 
     // Функция для получения подсказок инструментов
     const getInstrumentSuggestions = useCallback((input) => {
@@ -140,14 +132,14 @@ const Calculator = () => {
             detectedType = 'indices_world';
         }
 
-        if (detectedType && INSTRUMENT_DETAILS[detectedType]) {
+        if (detectedType) {
             setSelectedInstrumentType(detectedType);
 
-            // Автоматически устанавливаем шаг цены
-            const priceStep = INSTRUMENT_DETAILS[detectedType].priceStep;
+            // Автоматически устанавливаем шаг цены через утилиту
+            const priceStep = getDefaultPriceStep(instrument);
             dispatch({ type: 'SET_FIELD', field: 'currentPriceStep', value: priceStep });
         }
-    }, [instrument]);
+    }, [instrument, getDefaultPriceStep]);
 
     // Функция для проверки доступности полей сетки
     const isGridFieldEnabled = useCallback((index) => {
@@ -353,7 +345,7 @@ const Calculator = () => {
         }
     }, [state, deposit, riskSize, entryPrice, slPrice, direction, instrument, traderNote,
         status, isBacktest, tpLevels, gridEnabled, gridOrdersCount, gridDistribution,
-        currentPriceStep, selectedInstrumentType, addInstrument]);
+        currentPriceStep, selectedInstrumentType, addInstrument, getDefaultPriceStep]);
 
     // Обработчик отправки в Notion
     const handleSendToNotion = useCallback(async () => {
@@ -690,7 +682,6 @@ const Calculator = () => {
                     notionStatus={notionStatus}
                     isSendingToNotion={isSendingToNotion}
                     status={status}
-                    // Дополнительные данные из новой системы
                     calculationResults={calculationResults}
                     calculatorType={calculationResults.calculatorType}
                     marginRequired={calculationResults.marginRequired}
