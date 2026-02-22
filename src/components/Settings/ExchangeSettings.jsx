@@ -1,6 +1,6 @@
 // src/components/Settings/ExchangeSettings.jsx
 
-import React, { useState } from 'react';
+import React from 'react';
 import { EXCHANGE_RATES, DEFAULT_EXCHANGE } from '../../constants/exchangeRates';
 import { useLocalStorage } from '../../hooks';
 
@@ -12,8 +12,6 @@ const ExchangeSettings = () => {
         taker: 0.1,
         currency: 'USDT'
     });
-
-    const [editing, setEditing] = useState(false);
 
     const currentExchange = EXCHANGE_RATES[selectedExchange];
     const isCustom = selectedExchange === 'CUSTOM';
@@ -27,7 +25,6 @@ const ExchangeSettings = () => {
 
     const handleExchangeChange = (e) => {
         setSelectedExchange(e.target.value);
-        setEditing(false);
     };
 
     const handleCustomRateChange = (type, value) => {

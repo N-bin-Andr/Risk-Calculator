@@ -26,7 +26,6 @@ class CFDsCalculator {
             commission = 0.1, // комиссия в % от объема
             commissionType = 'percentage', // 'percentage', 'fixed', 'per_unit'
             overnightFee = 0,
-            accountCurrency = 'USD'
         } = params;
 
         // Шаг 1: Определяем сумму риска

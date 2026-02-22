@@ -1,7 +1,7 @@
 // src/components/Calculator/InstrumentInput.jsx
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useInstrumentHistory, useDebounce } from '../../hooks';
+import { useDebounce } from '../../hooks';
 import '../../styles/components/InstrumentInput.css';
 import { validateInstrument } from '../../utils/validators';
 
@@ -127,6 +127,10 @@ const InstrumentInput = ({
 
             case 'Escape':
                 setShowSuggestions(false);
+                break;
+
+            default:
+                // Ничего не делаем для других клавиш
                 break;
         }
     };

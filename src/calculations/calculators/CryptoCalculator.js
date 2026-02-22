@@ -14,7 +14,6 @@ class CryptoCalculator {
             instrument,
             entryPrice,
             slPrice,
-            tpPrice,
             tpLevels = [],
             deposit,
             riskSize,
